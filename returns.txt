@@ -1,0 +1,106 @@
+436:  return (
+473:  return (
+535:                      return <AccIcon size={10} style={{ color: tx.accountColor }} />;
+547:                      return <ToAccIcon size={10} style={{ color: tx.toAccountColor }} />;
+560:                    return <AccIcon size={10} style={{ color: tx.accountColor }} />;
+611:    return transactions
+618:    if (!showGrouping) return { 'Recent': transactions };
+645:    return groups;
+649:    return (
+659:  return (
+688:                return (
+776:    return transactions.filter(tx => {
+786:      if (!typeMatch) return false;
+791:        return (
+799:      return true;
+806:    return { inc, exp, count: filteredTransactions.length };
+809:  return (
+1025:  return (
+1128:  return (
+1432:            if (!name) return;
+1464:  return (
+1520:    if (activeFilter === 'all') return true;
+1521:    return tx.type === activeFilter;
+1524:  return (
+1651:  return (
+1847:    if (label !== 'Accounts') return {};
+1867:    return balances;
+1871:    if (label !== 'Contacts') return { totalPaona: 0, totalDena: 0, contactBalances: {} };
+1878:      if (!tx.person) return;
+1901:    return { totalPaona, totalDena, contactBalances };
+1932:        return item.accountType === accountFilter;
+1935:        return item.parentCategory === subCategoryFilter;
+1939:        return item.name.toLowerCase().includes(q) || (item.phone && item.phone.includes(q));
+1941:      return true;
+1945:        if (a.isDefault) return -1;
+1946:        if (b.isDefault) return 1;
+1947:        if (a.isPinned && !b.isPinned) return -1;
+1948:        if (!a.isPinned && b.isPinned) return 1;
+1950:      return 0;
+1954:    if (label !== 'Sub Categories' || subCategoryFilter !== 'All') return null;
+1961:    return groups;
+1965:    if (isSaving) return;
+1966:    if (!newItemName) return;
+2013:    return (
+2112:    if (!data.categories) return [];
+2113:    return Object.values(data.categories).flat();
+2116:  return (
+2244:              return (
+2430:                  return;
+2723:                  return accountTxs.length > 0 ? accountTxs.map(tx => (
+2760:    return transactions
+2772:  return (
+2923:  return (
+3198:  return (
+3281:  return (
+3469:  if (!isOpen) return null;
+3475:  return (
+3562:    if (a.isDefault) return -1;
+3563:    if (b.isDefault) return 1;
+3564:    if (a.isPinned && !b.isPinned) return -1;
+3565:    if (!a.isPinned && b.isPinned) return 1;
+3566:    return 0;
+3597:    if (!category) return managementData.subCategories;
+3598:    return managementData.subCategories.filter((sub: any) => sub.parentCategory === category);
+3602:    return transactions
+3616:      case 'category': return currentCategories;
+3617:      case 'subCategory': return managementData.subCategories;
+3619:      case 'toAccount': return managementData.accounts;
+3620:      case 'person': return managementData.persons;
+3621:      default: return [];
+3636:    if (!amount || parseFloat(amount) <= 0) return false;
+3637:    if (!account) return false;
+3638:    if (type !== 'repayment' && type !== 'transfer' && !category) return false;
+3639:    if (type === 'repayment' && !linkedTxId) return false;
+3640:    if (type === 'transfer' && !toAccount) return false;
+3641:    return true;
+3645:    if (!isSaveEnabled()) return;
+3705:  return (
+3821:              return (
+3854:                return (
+3904:                      return <IconComp size={20} />;
+3931:                  return (
+4303:  if (!isOpen) return null;
+4328:  return (
+4363:                return (
+4419:  if (!isOpen) return null;
+4421:  return (
+4458:                return <IconComp size={24} />;
+4542:            if (!name || !date || !time) return;
+4566:  if (!query) return null;
+4571:    if (!str) return 0;
+4573:    if (s === searchStr) return 100;
+4574:    if (s.startsWith(searchStr)) return 50;
+4575:    if (s.includes(searchStr)) return 10;
+4576:    return 0;
+4610:    return scoreB - scoreA;
+4666:  return (
+4957:    return {
+4993:      return newData;
+5014:      return newData;
+5050:      return newData;
+5083:      return newData;
+5087:  return (
+5257:                      return prev;
+5261:                  return { ...prev, accounts: newAccounts };
+5270:                  return { ...prev, accounts: newAccounts };
