@@ -1460,12 +1460,14 @@ const TransactionItem = React.memo(({
   const { iconBg, iconColor } = getColorClasses(colorName);
 
   return (
-    <motion.button 
+    <motion.div 
       onClick={onClick}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "w-full text-left flex items-center gap-3 p-3 transition-all bg-white hover:bg-slate-50 active:bg-slate-100"
+        "w-full text-left flex items-center gap-3 p-3 transition-all bg-white hover:bg-slate-50 active:bg-slate-100 cursor-pointer"
       )}
+      role="button"
+      tabIndex={0}
     >
       {/* Left Icon - Box Style from Image */}
       <div 
@@ -1540,38 +1542,46 @@ const TransactionItem = React.memo(({
             {isActive && (
               <>
                 {/* Backdrop to close on click outside */}
-                <div 
-                  className="fixed inset-0 z-[100]" 
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[150]" 
                   onClick={(e) => { e.stopPropagation(); onToggleOptions?.(e as any); }}
                 />
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-[110] overflow-hidden"
+                  initial={{ opacity: 0, y: '100%' }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: '100%' }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                  className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-[160] pb-8 pt-3 px-6"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onEdit?.(tx); onToggleOptions?.(e as any); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors"
-                  >
-                    <Edit2 size={14} />
-                    {t('edit') || 'Edit'}
-                  </button>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onDelete?.(tx.id); onToggleOptions?.(e as any); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-rose-600 transition-colors"
-                  >
-                    <Trash2 size={14} />
-                    {t('delete') || 'Delete'}
-                  </button>
+                  <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-4">{t('moreOptions') || 'More Options'}</h3>
+                  <div className="space-y-2">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onEdit?.(tx); onToggleOptions?.(e as any); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-xl text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                    >
+                      <Edit2 size={18} />
+                      {t('edit') || 'Edit'}
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onDelete?.(tx.id); onToggleOptions?.(e as any); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-xl text-sm font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                      {t('delete') || 'Delete'}
+                    </button>
+                  </div>
                 </motion.div>
               </>
             )}
           </AnimatePresence>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   );
 });
 const TransactionList = React.memo(({ 
@@ -2354,7 +2364,7 @@ const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSea
             
             <div className={cn(viewMode === 'grid' ? "grid grid-cols-2 gap-3" : "flex flex-col")}>
               {section.items.map((item) => (
-                <motion.button 
+                <motion.div 
                   key={item.id} 
                   onClick={() => onOpenDetail(item.id)}
                   whileTap={{ scale: 0.98 }}
@@ -2364,6 +2374,8 @@ const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSea
                       ? "bg-white border border-slate-200 rounded-lg p-3.5 flex flex-col justify-between hover:bg-slate-50" 
                       : "w-full text-left flex items-center gap-3.5 p-3.5 rounded-lg border border-slate-200 bg-white mb-2 last:mb-0 hover:bg-slate-50"
                   )}
+                  role="button"
+                  tabIndex={0}
                 >
                   {viewMode === 'grid' ? (
                     <>
@@ -2402,31 +2414,37 @@ const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSea
                             <AnimatePresence>
                               {activeOptionsIndex === item.id && (
                                 <>
-                                  <div 
-                                    className="fixed inset-0 z-[100]" 
+                                  <motion.div 
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[150]" 
                                     onClick={(e) => { e.stopPropagation(); setActiveOptionsIndex(null); }}
                                   />
                                   <motion.div 
                                     initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-[110] overflow-hidden"
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-[160] overflow-hidden"
                                     onClick={(e) => e.stopPropagation()}
                                   >
-                                    <button 
-                                      onClick={(e) => { e.stopPropagation(); onOpenDetail(item.id); setActiveOptionsIndex(null); }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                                    >
-                                      <FileText size={14} />
-                                      {t('viewAll') || 'View All'}
-                                    </button>
-                                    <button 
-                                      onClick={(e) => { e.stopPropagation(); onAddNew(item.label); setActiveOptionsIndex(null); }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                                    >
-                                      <Plus size={14} />
-                                      {t('addNew') || 'Add New'}
-                                    </button>
+                                    <div className="flex flex-col p-1">
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); onOpenDetail(item.id); setActiveOptionsIndex(null); }}
+                                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
+                                      >
+                                        <FileText size={14} />
+                                        {t('viewAll') || 'View All'}
+                                      </button>
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); onAddNew(item.label); setActiveOptionsIndex(null); }}
+                                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
+                                      >
+                                        <Plus size={14} />
+                                        {t('addNew') || 'Add New'}
+                                      </button>
+                                    </div>
                                   </motion.div>
                                 </>
                               )}
@@ -2484,31 +2502,37 @@ const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSea
                           <AnimatePresence>
                             {activeOptionsIndex === item.id && (
                               <>
-                                <div 
-                                  className="fixed inset-0 z-[100]" 
+                                <motion.div 
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[150]" 
                                   onClick={(e) => { e.stopPropagation(); setActiveOptionsIndex(null); }}
                                 />
                                 <motion.div 
                                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                   animate={{ opacity: 1, scale: 1, y: 0 }}
                                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-[110] overflow-hidden"
+                                  transition={{ duration: 0.15 }}
+                                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-[160] overflow-hidden"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); onOpenDetail(item.id); setActiveOptionsIndex(null); }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                                  >
-                                    <FileText size={14} />
-                                    {t('viewAll') || 'View All'}
-                                  </button>
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); onAddNew(item.label); setActiveOptionsIndex(null); }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                                  >
-                                    <Plus size={14} />
-                                    {t('addNew') || 'Add New'}
-                                  </button>
+                                  <div className="flex flex-col p-1">
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); onOpenDetail(item.id); setActiveOptionsIndex(null); }}
+                                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
+                                    >
+                                      <FileText size={14} />
+                                      {t('viewAll') || 'View All'}
+                                    </button>
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); onAddNew(item.label); setActiveOptionsIndex(null); }}
+                                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
+                                    >
+                                      <Plus size={14} />
+                                      {t('addNew') || 'Add New'}
+                                    </button>
+                                  </div>
                                 </motion.div>
                               </>
                             )}
@@ -2517,7 +2541,7 @@ const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSea
                       </div>
                     </>
                   )}
-                </motion.button>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -3684,58 +3708,64 @@ const ManagementDetailView = React.memo(({
             <AnimatePresence>
               {activeOptionsIndex === idx && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-[100]" 
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[150]" 
                     onClick={(e) => { e.stopPropagation(); setActiveOptionsIndex(null); }}
                   />
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95, y: -10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    className="absolute right-0 top-full mt-2 w-36 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-[110] overflow-hidden"
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-[160] overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {label === 'Tasks' && (
+                    <div className="flex flex-col p-1">
+                      {label === 'Tasks' && (
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            const updatedItem = { ...item, status: item.status === 'completed' ? 'pending' : 'completed' };
+                            onUpdate(label, originalIdx, updatedItem);
+                            setActiveOptionsIndex(null);
+                          }}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-left",
+                            item.status === 'completed' ? "text-emerald-600 hover:bg-emerald-50" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                          )}
+                        >
+                          <Check size={14} />
+                          {item.status === 'completed' ? t('markPending') || 'Mark Pending' : t('markCompleted') || 'Mark Completed'}
+                        </button>
+                      )}
                       <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          const updatedItem = { ...item, status: item.status === 'completed' ? 'pending' : 'completed' };
-                          onUpdate(label, originalIdx, updatedItem);
-                          setActiveOptionsIndex(null);
-                        }}
+                        onClick={(e) => { e.stopPropagation(); startEdit(item, originalIdx); setActiveOptionsIndex(null); }}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
+                      >
+                        <Edit2 size={14} />
+                        {t('edit') || 'Edit'}
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onToggleArchive(label, originalIdx, isCategory ? (activeType === 'all' ? item.type : activeType) : undefined); setActiveOptionsIndex(null); }}
                         className={cn(
-                          "w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors",
-                          item.status === 'completed' ? "text-emerald-600 bg-emerald-50" : "text-slate-600 hover:bg-slate-50"
+                          "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-left",
+                          item.isArchived ? "text-amber-600 hover:bg-amber-50" : "text-slate-600 hover:text-amber-600 hover:bg-amber-50"
                         )}
                       >
-                        <Check size={14} />
-                        {item.status === 'completed' ? t('markPending') || 'Mark Pending' : t('markCompleted') || 'Mark Completed'}
+                        {item.isArchived ? <RotateCcw size={14} /> : <Archive size={14} />}
+                        {item.isArchived ? t('unarchive') || 'Unarchive' : t('archive') || 'Archive'}
                       </button>
-                    )}
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); startEdit(item, originalIdx); setActiveOptionsIndex(null); }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors"
-                    >
-                      <Edit2 size={14} />
-                      {t('edit') || 'Edit'}
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onToggleArchive(label, originalIdx, isCategory ? (activeType === 'all' ? item.type : activeType) : undefined); setActiveOptionsIndex(null); }}
-                      className={cn(
-                        "w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors",
-                        item.isArchived ? "text-amber-600 bg-amber-50" : "text-slate-600 hover:bg-slate-50 hover:text-amber-600"
-                      )}
-                    >
-                      {item.isArchived ? <RotateCcw size={14} /> : <Archive size={14} />}
-                      {item.isArchived ? t('unarchive') || 'Unarchive' : t('archive') || 'Archive'}
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onRemove(label, originalIdx, isCategory ? (activeType === 'all' ? item.type : activeType) : undefined); setActiveOptionsIndex(null); }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-rose-600 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                      {t('delete') || 'Delete'}
-                    </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onRemove(label, originalIdx, isCategory ? (activeType === 'all' ? item.type : activeType) : undefined); setActiveOptionsIndex(null); }}
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-left"
+                      >
+                        <Trash2 size={14} />
+                        {t('delete') || 'Delete'}
+                      </button>
+                    </div>
                   </motion.div>
                 </>
               )}
@@ -3924,65 +3954,71 @@ const ManagementDetailView = React.memo(({
                           <AnimatePresence>
                             {activeOptionsIndex === idx && (
                               <>
-                                <div 
-                                  className="fixed inset-0 z-[100]" 
+                                <motion.div 
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[150]" 
                                   onClick={(e) => { e.stopPropagation(); setActiveOptionsIndex(null); }}
                                 />
                                 <motion.div 
                                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                   animate={{ opacity: 1, scale: 1, y: 0 }}
                                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  className="absolute right-0 top-full mt-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-[110] overflow-hidden"
+                                  transition={{ duration: 0.15 }}
+                                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-[160] overflow-hidden"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  {!item.isArchived && (
-                                    <>
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); onTogglePin?.(originalIdx); setActiveOptionsIndex(null); }}
-                                        className={cn(
-                                          "w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors",
-                                          item.isPinned ? "text-amber-600 bg-amber-50" : "text-slate-600 hover:bg-slate-50 hover:text-amber-600"
-                                        )}
-                                      >
-                                        <Pin size={14} className={item.isPinned ? "fill-current" : ""} />
-                                        {item.isPinned ? t('unpin') || 'Unpin' : t('pin') || 'Pin'}
-                                      </button>
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); onSetDefault?.(originalIdx); setActiveOptionsIndex(null); }}
-                                        className={cn(
-                                          "w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors",
-                                          item.isDefault ? "text-emerald-600 bg-emerald-50" : "text-slate-600 hover:bg-slate-50 hover:text-emerald-600"
-                                        )}
-                                      >
-                                        <Check size={14} />
-                                        {item.isDefault ? t('default') || 'Default' : t('setDefault') || 'Set Default'}
-                                      </button>
-                                    </>
-                                  )}
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); startEdit(item, originalIdx); setActiveOptionsIndex(null); }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors"
-                                  >
-                                    <Edit2 size={14} />
-                                    {t('edit') || 'Edit'}
-                                  </button>
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); onToggleArchive(label, originalIdx, isCategory ? activeType : undefined); setActiveOptionsIndex(null); }}
-                                    className={cn(
-                                      "w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors",
-                                      item.isArchived ? "text-amber-600 bg-amber-50" : "text-slate-600 hover:bg-slate-50 hover:text-amber-600"
+                                  <div className="flex flex-col p-1">
+                                    {!item.isArchived && (
+                                      <>
+                                        <button 
+                                          onClick={(e) => { e.stopPropagation(); onTogglePin?.(originalIdx); setActiveOptionsIndex(null); }}
+                                          className={cn(
+                                            "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-left",
+                                            item.isPinned ? "text-amber-600 hover:bg-amber-50" : "text-slate-600 hover:text-amber-600 hover:bg-amber-50"
+                                          )}
+                                        >
+                                          <Pin size={14} className={item.isPinned ? "fill-current" : ""} />
+                                          {item.isPinned ? t('unpin') || 'Unpin' : t('pin') || 'Pin'}
+                                        </button>
+                                        <button 
+                                          onClick={(e) => { e.stopPropagation(); onSetDefault?.(originalIdx); setActiveOptionsIndex(null); }}
+                                          className={cn(
+                                            "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-left",
+                                            item.isDefault ? "text-emerald-600 hover:bg-emerald-50" : "text-slate-600 hover:text-emerald-600 hover:bg-emerald-50"
+                                          )}
+                                        >
+                                          <Check size={14} />
+                                          {item.isDefault ? t('default') || 'Default' : t('setDefault') || 'Set Default'}
+                                        </button>
+                                      </>
                                     )}
-                                  >
-                                    {item.isArchived ? <RotateCcw size={14} /> : <Archive size={14} />}
-                                    {item.isArchived ? t('unarchive') || 'Unarchive' : t('archive') || 'Archive'}
-                                  </button>
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); onRemove(label, originalIdx, isCategory ? activeType : undefined); setActiveOptionsIndex(null); }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-rose-600 transition-colors"
-                                  >
-                                    <Trash2 size={14} />
-                                    {t('delete') || 'Delete'}
-                                  </button>
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); startEdit(item, originalIdx); setActiveOptionsIndex(null); }}
+                                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
+                                    >
+                                      <Edit2 size={14} />
+                                      {t('edit') || 'Edit'}
+                                    </button>
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); onToggleArchive(label, originalIdx, isCategory ? activeType : undefined); setActiveOptionsIndex(null); }}
+                                      className={cn(
+                                        "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-left",
+                                        item.isArchived ? "text-amber-600 hover:bg-amber-50" : "text-slate-600 hover:text-amber-600 hover:bg-amber-50"
+                                      )}
+                                    >
+                                      {item.isArchived ? <RotateCcw size={14} /> : <Archive size={14} />}
+                                      {item.isArchived ? t('unarchive') || 'Unarchive' : t('archive') || 'Archive'}
+                                    </button>
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); onRemove(label, originalIdx, isCategory ? activeType : undefined); setActiveOptionsIndex(null); }}
+                                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-left"
+                                    >
+                                      <Trash2 size={14} />
+                                      {t('delete') || 'Delete'}
+                                    </button>
+                                  </div>
                                 </motion.div>
                               </>
                             )}
