@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect, useMemo, createContext, useContext } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback, createContext, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Search, 
@@ -80,7 +80,12 @@ import {
   MoreHorizontal,
   MoreVertical,
   LayoutGrid,
-  List
+  List,
+  LayoutDashboard,
+  ScrollText,
+  Activity,
+  FolderKanban,
+  CircleUserRound
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'motion/react';
 import { 
@@ -92,6 +97,9 @@ import {
   Bar, 
   XAxis, 
   YAxis, 
+  AreaChart,
+  Area,
+  CartesianGrid,
   Tooltip as ReTooltip 
 } from 'recharts';
 import { cn } from './utils';
@@ -225,6 +233,7 @@ const translations = {
     receipt: 'Receipt',
     normal: 'Normal',
     recurring: 'Recurring',
+    subscription: 'Subscription',
     fromAccount: 'From Account',
     toAccount: 'To Account',
     category: 'Category',
@@ -368,7 +377,11 @@ const translations = {
     pdfExportTriggered: 'PDF Export Triggered',
     expenseDistribution: 'Expense Distribution',
     averageDailySpend: 'Average Daily Spend',
-    lowerThanLastMonth: 'lower than last month',
+    lowerThanLastMonth: 'Lower than last month',
+    monthlyTrend: 'Monthly Trend',
+    topSpending: 'Top Spending Categories',
+    savingsRate: 'Savings Rate',
+    total: 'Total',
     categoryTrends: 'Category Trends',
     repaid: 'Repaid',
     collected: 'Collected',
@@ -439,6 +452,22 @@ const translations = {
     low: 'Low',
     medium: 'Medium',
     high: 'High',
+    widget: 'Widget',
+    widgetDesc: 'Enable home screen widget',
+    floatingBubble: 'Floating Bubble',
+    floatingBubbleDesc: 'Enable floating bubble for quick access',
+    widgetSettings: 'Widget Settings',
+    floatingBubbleSettings: 'Floating Bubble Settings',
+    enableWidget: 'Enable Widget',
+    enableFloatingBubble: 'Enable Floating Bubble',
+    widgetStyle: 'Widget Style',
+    bubbleStyle: 'Bubble Style',
+    transparent: 'Transparent',
+    solid: 'Solid',
+    small: 'Small',
+    large: 'Large',
+    opacity: 'Opacity',
+    size: 'Size',
   },
   bn: {
     // Bottom Nav
@@ -565,6 +594,7 @@ const translations = {
     receipt: 'রসিদ',
     normal: 'সাধারণ',
     recurring: 'পুনরাবৃত্ত',
+    subscription: 'সাবস্ক্রিপশন',
     fromAccount: 'যে অ্যাকাউন্ট থেকে',
     toAccount: 'যে অ্যাকাউন্টে',
     category: 'ক্যাটাগরি',
@@ -709,6 +739,10 @@ const translations = {
     expenseDistribution: 'খরচ বণ্টন',
     averageDailySpend: 'গড় দৈনিক ব্যয়',
     lowerThanLastMonth: 'গত মাসের তুলনায় কম',
+    monthlyTrend: 'মাসিক ট্রেন্ড',
+    topSpending: 'শীর্ষ ব্যয় বিভাগ',
+    savingsRate: 'সঞ্চয় হার',
+    total: 'মোট',
     categoryTrends: 'ক্যাটাগরি ট্রেন্ডস',
     repaid: 'পরিশোধিত',
     collected: 'সংগৃহীত',
@@ -779,6 +813,22 @@ const translations = {
     low: 'কম',
     medium: 'মাঝারি',
     high: 'বেশি',
+    widget: 'উইজেট',
+    widgetDesc: 'হোম স্ক্রিন উইজেট চালু করুন',
+    floatingBubble: 'ফ্লোটিং বাবল',
+    floatingBubbleDesc: 'দ্রুত অ্যাক্সেসের জন্য ফ্লোটিং বাবল চালু করুন',
+    widgetSettings: 'উইজেট সেটিংস',
+    floatingBubbleSettings: 'ফ্লোটিং বাবল সেটিংস',
+    enableWidget: 'উইজেট চালু করুন',
+    enableFloatingBubble: 'ফ্লোটিং বাবল চালু করুন',
+    widgetStyle: 'উইজেট স্টাইল',
+    bubbleStyle: 'বাবল স্টাইল',
+    transparent: 'স্বচ্ছ',
+    solid: 'সলিড',
+    small: 'ছোট',
+    large: 'বড়',
+    opacity: 'অস্বচ্ছতা',
+    size: 'আকার',
   }
 };
 
@@ -1066,81 +1116,72 @@ const BottomBar = React.memo(({ activeTab, setActiveTab, onAddClick }: { activeT
 
   return (
   <>
-    {/* Floating Action Row (Now hides on scroll) */}
-    <div className="fixed bottom-24 left-0 right-0 z-[400] flex justify-center pointer-events-none px-4">
+    {/* Main Bottom Navigation Bar (Floating Pill Style with Plus Button) */}
+    <div className="fixed bottom-6 left-0 right-0 z-[410] flex justify-center pointer-events-none px-4">
       <motion.div 
         animate={{ 
-          y: isVisible ? 0 : 80,
+          y: isVisible ? 0 : 100,
           opacity: isVisible ? 1 : 0,
           scale: isVisible ? 1 : 0.95
         }}
         transition={{ 
-          duration: 0.2, 
-          ease: [0.23, 1, 0.32, 1] // Custom cubic-bezier for a very smooth, fast feel
+          type: "spring",
+          stiffness: 200,
+          damping: 30
         }}
-        className="w-full max-w-md pointer-events-auto"
+        className="w-full max-w-md pointer-events-auto flex items-center justify-center gap-2"
       >
-        <div className="flex items-center justify-end px-2">
-          {/* Primary Action Button (Blue Plus) */}
-          <button 
-            onClick={onAddClick}
-            className="w-14 h-14 bg-blue-600 text-white rounded-lg flex items-center justify-center hover:bg-blue-700 active:scale-90 transition-all shadow-lg shadow-blue-200"
-          >
-            <Plus size={28} />
-          </button>
+        <div className="flex-1 bg-white/90 backdrop-blur-2xl border border-white/50 p-1.5 flex items-center gap-1 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
+          {[
+            { id: 'home', icon: LayoutDashboard, label: t('home') },
+            { id: 'transactions', icon: ScrollText, label: t('history') },
+            { id: 'analysis', icon: Activity, label: t('analysis') },
+            { id: 'management', icon: FolderKanban, label: t('manage') },
+            { id: 'settings', icon: CircleUserRound, label: t('settings') }
+          ].map((item) => {
+            const isActive = activeTab === item.id;
+            const Icon = item.icon;
+            return (
+              <button 
+                key={item.id}
+                onClick={() => setActiveTab(item.id)} 
+                className={cn(
+                  "relative flex items-center justify-center h-11 rounded-full transition-all duration-300 ease-out overflow-hidden",
+                  isActive ? "flex-grow bg-indigo-50 text-indigo-600 px-2" : "w-10 shrink-0 text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                )}
+              >
+                <div className="relative z-10 flex items-center justify-center">
+                  <Icon 
+                    size={20} 
+                    strokeWidth={isActive ? 2.5 : 2} 
+                    className={cn(
+                      "shrink-0 transition-transform duration-300",
+                      isActive && "scale-110 drop-shadow-sm"
+                    )} 
+                  />
+                  <div 
+                    className={cn(
+                      "transition-all duration-300 ease-out flex items-center overflow-hidden",
+                      isActive ? "max-w-[80px] opacity-100 ml-1.5" : "max-w-0 opacity-0 ml-0"
+                    )}
+                  >
+                    <span className="text-[10px] font-bold tracking-wide whitespace-nowrap">
+                      {item.label}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
-      </motion.div>
-    </div>
-
-    {/* Main Bottom Navigation Bar (Now hides on scroll) */}
-    <div className="fixed bottom-0 left-0 right-0 z-[410] flex justify-center pointer-events-none">
-      <motion.div 
-        animate={{ 
-          y: isVisible ? 0 : 100,
-          opacity: isVisible ? 1 : 0
-        }}
-        transition={{ 
-          duration: 0.2, 
-          ease: [0.23, 1, 0.32, 1]
-        }}
-        className="w-full max-w-md pointer-events-auto"
-      >
-        <div className="bg-white border-t border-slate-100 px-6 py-3 flex items-center justify-between rounded-t-xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-          <button onClick={() => setActiveTab('home')} className={cn("flex flex-col items-center gap-1.5 transition-all", activeTab === 'home' ? "text-blue-600" : "text-slate-400 hover:text-slate-600")}>
-            <div className={cn("p-1 rounded-lg transition-colors", activeTab === 'home' && "bg-blue-50")}>
-              <Home size={22} className={cn(activeTab === 'home' ? "fill-blue-200 text-blue-600" : "text-slate-400 fill-transparent")} />
-            </div>
-            <span className="text-[10px] font-medium text-clip-fix">{t('home')}</span>
-          </button>
-          
-          <button onClick={() => setActiveTab('transactions')} className={cn("flex flex-col items-center gap-1.5 transition-all", activeTab === 'transactions' ? "text-blue-600" : "text-slate-400 hover:text-slate-600")}>
-            <div className={cn("p-1 rounded-lg transition-colors", activeTab === 'transactions' && "bg-blue-50")}>
-              <Receipt size={22} className={cn(activeTab === 'transactions' ? "fill-blue-200 text-blue-600" : "text-slate-400 fill-transparent")} />
-            </div>
-            <span className="text-[10px] font-medium text-clip-fix">{t('history')}</span>
-          </button>
-          
-          <button onClick={() => setActiveTab('analysis')} className={cn("flex flex-col items-center gap-1.5 transition-all", activeTab === 'analysis' ? "text-blue-600" : "text-slate-400 hover:text-slate-600")}>
-            <div className={cn("p-1 rounded-lg transition-colors", activeTab === 'analysis' && "bg-blue-50")}>
-              <BarChart3 size={22} className={cn(activeTab === 'analysis' ? "fill-blue-200 text-blue-600" : "text-slate-400 fill-transparent")} />
-            </div>
-            <span className="text-[10px] font-medium text-clip-fix">{t('analysis')}</span>
-          </button>
-
-          <button onClick={() => setActiveTab('management')} className={cn("flex flex-col items-center gap-1.5 transition-all", activeTab === 'management' ? "text-blue-600" : "text-slate-400 hover:text-slate-600")}>
-            <div className={cn("p-1 rounded-lg transition-colors", activeTab === 'management' && "bg-blue-50")}>
-              <Briefcase size={22} className={cn(activeTab === 'management' ? "fill-blue-200 text-blue-600" : "text-slate-400 fill-transparent")} />
-            </div>
-            <span className="text-[10px] font-medium text-clip-fix">{t('manage')}</span>
-          </button>
-
-          <button onClick={() => setActiveTab('settings')} className={cn("flex flex-col items-center gap-1.5 transition-all", activeTab === 'settings' ? "text-blue-600" : "text-slate-400 hover:text-slate-600")}>
-            <div className={cn("p-1 rounded-lg transition-colors", activeTab === 'settings' && "bg-blue-50")}>
-              <User size={22} className={cn(activeTab === 'settings' ? "fill-blue-200 text-blue-600" : "text-slate-400 fill-transparent")} />
-            </div>
-            <span className="text-[10px] font-medium text-clip-fix">{t('settings')}</span>
-          </button>
-        </div>
+        
+        {/* Primary Action Button (Blue Plus) */}
+        <button 
+          onClick={onAddClick}
+          className="shrink-0 w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 border border-white/20 active:scale-90"
+        >
+          <Plus size={24} strokeWidth={2.5} />
+        </button>
       </motion.div>
     </div>
   </>
@@ -1326,6 +1367,31 @@ const UnifiedTopBar = React.memo(({
             )}
           </div>
         )}
+
+        {/* Ads Bar */}
+        {isHome && (
+          <div className="mt-3">
+            <div className="bg-white rounded-lg border border-slate-200 p-3 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-11 h-11 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                    <Sparkles size={22} strokeWidth={2.5} />
+                  </div>
+                  <div className="absolute -top-1 -left-1 bg-amber-400 text-[7px] font-bold text-amber-900 px-1 rounded-sm shadow-sm ring-1 ring-white">
+                    AD
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium text-[15px] leading-none text-slate-900">{t('upgradeToPremium') || 'Upgrade to Premium'}</h4>
+                  <p className="text-[10px] text-slate-500 mt-1">{t('claimAdFree') || 'Claim Your Ad-Free Pass'}</p>
+                </div>
+              </div>
+              <button className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-[10px] font-bold shadow-sm active:scale-95 transition-transform">
+                {t('upgrade') || 'UPGRADE'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <AnimatePresence>
@@ -1342,12 +1408,12 @@ const SummaryGrid = React.memo(({ totals, sections }: { totals: any, sections: R
   const { income, expense, paona, dena, joma, invest, denaRepaid, paonaRepaid } = totals;
 
   const allItems = [
-    { id: 'summary_expense', label: t('expense'), value: expense, icon: ArrowUpRight, color: 'text-rose-600', bg: 'bg-rose-50' },
-    { id: 'summary_income', label: t('income'), value: income, icon: ArrowDownLeft, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { id: 'summary_taken', label: t('taken'), value: dena, icon: ArrowLeftRight, color: 'text-rose-600', bg: 'bg-rose-50' },
-    { id: 'summary_given', label: t('given'), value: paona, icon: ArrowLeftRight, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { id: 'summary_savings', label: t('savings'), value: joma, icon: PiggyBank, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { id: 'summary_invest', label: t('invest'), value: invest, icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { id: 'summary_expense', label: t('expense'), value: expense, icon: ArrowUpRight, color: 'text-rose-600', bg: 'bg-rose-500/10 backdrop-blur-xl border border-white shadow-sm' },
+    { id: 'summary_income', label: t('income'), value: income, icon: ArrowDownLeft, color: 'text-emerald-600', bg: 'bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm' },
+    { id: 'summary_taken', label: t('taken'), value: dena, icon: ArrowLeftRight, color: 'text-rose-600', bg: 'bg-rose-500/10 backdrop-blur-xl border border-white shadow-sm' },
+    { id: 'summary_given', label: t('given'), value: paona, icon: ArrowLeftRight, color: 'text-emerald-600', bg: 'bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm' },
+    { id: 'summary_savings', label: t('savings'), value: joma, icon: PiggyBank, color: 'text-blue-600', bg: 'bg-blue-500/10 backdrop-blur-xl border border-white shadow-sm' },
+    { id: 'summary_invest', label: t('invest'), value: invest, icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm' },
   ];
 
   const mainItems = allItems.filter(item => sections[item.id]);
@@ -1379,7 +1445,7 @@ const SummaryGrid = React.memo(({ totals, sections }: { totals: any, sections: R
       {sections.summary_savings_total && (
         <div className="bg-slate-100 border border-slate-200 p-3 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-md bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm text-indigo-600 flex items-center justify-center">
               <PiggyBank size={20} />
             </div>
             <div>
@@ -1416,18 +1482,18 @@ const getCategoryColor = (category: string, type: string) => {
 
 const getColorClasses = (colorName: string) => {
   const map: Record<string, any> = {
-    orange: { iconBg: 'bg-orange-100/50', iconColor: 'text-orange-500' },
-    blue: { iconBg: 'bg-blue-100/50', iconColor: 'text-blue-500' },
-    purple: { iconBg: 'bg-purple-100/50', iconColor: 'text-purple-500' },
-    amber: { iconBg: 'bg-amber-100/50', iconColor: 'text-amber-500' },
-    rose: { iconBg: 'bg-rose-100/50', iconColor: 'text-rose-500' },
-    pink: { iconBg: 'bg-pink-100/50', iconColor: 'text-pink-500' },
-    indigo: { iconBg: 'bg-indigo-100/50', iconColor: 'text-indigo-500' },
-    emerald: { iconBg: 'bg-emerald-100/50', iconColor: 'text-emerald-500' },
-    teal: { iconBg: 'bg-teal-100/50', iconColor: 'text-teal-500' },
-    cyan: { iconBg: 'bg-cyan-100/50', iconColor: 'text-cyan-500' },
-    red: { iconBg: 'bg-red-100/50', iconColor: 'text-red-500' },
-    slate: { iconBg: 'bg-slate-100/50', iconColor: 'text-slate-500' },
+    orange: { iconBg: 'bg-orange-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-orange-500' },
+    blue: { iconBg: 'bg-blue-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-blue-500' },
+    purple: { iconBg: 'bg-purple-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-purple-500' },
+    amber: { iconBg: 'bg-amber-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-amber-500' },
+    rose: { iconBg: 'bg-rose-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-rose-500' },
+    pink: { iconBg: 'bg-pink-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-pink-500' },
+    indigo: { iconBg: 'bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-indigo-500' },
+    emerald: { iconBg: 'bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-emerald-500' },
+    teal: { iconBg: 'bg-teal-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-teal-500' },
+    cyan: { iconBg: 'bg-cyan-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-cyan-500' },
+    red: { iconBg: 'bg-red-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-red-500' },
+    slate: { iconBg: 'bg-slate-500/10 backdrop-blur-xl border border-white shadow-sm', iconColor: 'text-slate-500' },
   };
   return map[colorName] || map.slate;
 };
@@ -1464,7 +1530,8 @@ const TransactionItem = React.memo(({
       onClick={onClick}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "w-full text-left flex items-center gap-3 p-3 transition-all bg-white hover:bg-slate-50 active:bg-slate-100 cursor-pointer"
+        "w-full text-left flex items-center gap-3 p-3 transition-all bg-white hover:bg-slate-50 active:bg-slate-100 cursor-pointer",
+        isActive ? "relative z-50" : "relative"
       )}
       role="button"
       tabIndex={0}
@@ -1472,7 +1539,7 @@ const TransactionItem = React.memo(({
       {/* Left Icon - Box Style from Image */}
       <div 
         className={cn(
-          "w-11 h-11 rounded-md flex items-center justify-center shrink-0 overflow-hidden", 
+          "w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden", 
           iconBg
         )}
       >
@@ -1487,30 +1554,6 @@ const TransactionItem = React.memo(({
       
       {/* Middle Content - Clean Stacked Text */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-xs font-medium uppercase leading-none text-slate-500 text-clip-fix">
-            {tx.category || t('uncategorized')}
-          </p>
-          {(showDate && tx.date) ? (
-            <span className="text-[9px] font-medium text-slate-400">
-              {new Date(tx.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-            </span>
-          ) : tx.time ? (
-            <span className="text-[9px] font-medium text-slate-400">
-              {(() => {
-                try {
-                  const [hours, minutes] = tx.time.split(':');
-                  const h = parseInt(hours);
-                  const ampm = h >= 12 ? 'PM' : 'AM';
-                  const h12 = h % 12 || 12;
-                  return `${h12}:${minutes} ${ampm}`;
-                } catch (e) {
-                  return tx.time;
-                }
-              })()}
-            </span>
-          ) : null}
-        </div>
         <h4 className="font-medium text-[15px] leading-none tracking-tighter truncate text-slate-900 text-clip-fix">
           {tx.txName || tx.category}
         </h4>
@@ -1524,12 +1567,13 @@ const TransactionItem = React.memo(({
           tx.type === 'expense' ? "text-rose-600" :
           "text-slate-900"
         )}>
-          {tx.type === 'expense' || tx.type === 'dena' ? '-' : '+'}{formatAmount(tx.amount)}
+          {formatAmount(tx.amount)}
         </span>
         
         <div className="relative">
           <button 
-            onClick={onToggleOptions}
+            onClick={(e) => { e.stopPropagation(); onToggleOptions?.(e); }}
+            onPointerDown={(e) => e.stopPropagation()}
             className={cn(
               "p-1.5 rounded-md transition-all",
               isActive ? "text-slate-600 bg-slate-100" : "text-slate-300 hover:text-slate-600 hover:bg-slate-100"
@@ -1540,43 +1584,30 @@ const TransactionItem = React.memo(({
 
           <AnimatePresence>
             {isActive && (
-              <>
-                {/* Backdrop to close on click outside */}
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[150]" 
-                  onClick={(e) => { e.stopPropagation(); onToggleOptions?.(e as any); }}
-                />
-                <motion.div 
-                  initial={{ opacity: 0, y: '100%' }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: '100%' }}
-                  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                  className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-[160] pb-8 pt-3 px-6"
-                  onClick={(e) => e.stopPropagation()}
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 z-[160] overflow-hidden py-1"
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onEdit?.(tx); onToggleOptions?.(e as any); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
                 >
-                  <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
-                  <h3 className="text-lg font-medium text-slate-900 mb-4">{t('moreOptions') || 'More Options'}</h3>
-                  <div className="space-y-2">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onEdit?.(tx); onToggleOptions?.(e as any); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-xl text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                    >
-                      <Edit2 size={18} />
-                      {t('edit') || 'Edit'}
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onDelete?.(tx.id); onToggleOptions?.(e as any); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-xl text-sm font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-                    >
-                      <Trash2 size={18} />
-                      {t('delete') || 'Delete'}
-                    </button>
-                  </div>
-                </motion.div>
-              </>
+                  <Edit2 size={16} />
+                  {t('edit') || 'Edit'}
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onDelete?.(tx.id); onToggleOptions?.(e as any); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+                >
+                  <Trash2 size={16} />
+                  {t('delete') || 'Delete'}
+                </button>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
@@ -1605,6 +1636,19 @@ const TransactionList = React.memo(({
 }) => {
   const { t, language } = useLanguage();
   const [activeOptionsIndex, setActiveOptionsIndex] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveOptionsIndex(null);
+    };
+    if (activeOptionsIndex !== null) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [activeOptionsIndex]);
+
   const getRepaidAmount = (txId: string) => {
     return transactions
       .filter(t => t.type === 'repayment' && t.linkedTxId === txId)
@@ -1685,11 +1729,7 @@ const TransactionList = React.memo(({
           )}
           {Object.entries(groupedTransactions).map(([date, txs]: [string, any], index) => (
             <React.Fragment key={date}>
-              {showGrouping && (
-                <div className={cn("flex items-center gap-4 px-4 py-4 bg-slate-100", index !== 0 ? "border-t border-slate-200" : "")}>
-                  <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{date}</h4>
-                </div>
-              )}
+              {/* Date headers removed as per user request */}
               <div className="flex flex-col">
                 {(txs as any[]).map((tx, txIndex) => {
                   const repaidAmount = (tx.type === 'dena' || tx.type === 'paona') 
@@ -1859,21 +1899,21 @@ const NotificationsView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         className="p-4 space-y-3"
       >
         <motion.div variants={{ hidden: { opacity: 0, y: 20, filter: "blur(8px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)" } }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} className="bg-white p-4 rounded-lg border border-slate-100 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><Gift size={20} /></div>
+          <div className="w-12 h-12 rounded-full bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm text-indigo-600 flex items-center justify-center shrink-0"><Gift size={20} /></div>
           <div>
             <p className="text-sm font-medium text-slate-900">{t('offerTitle')}</p>
             <p className="text-xs text-slate-500 mt-1">{t('offerDesc')}</p>
           </div>
         </motion.div>
         <motion.div variants={{ hidden: { opacity: 0, y: 20, filter: "blur(8px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)" } }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} className="bg-white p-4 rounded-lg border border-slate-100 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0"><Repeat size={20} /></div>
+          <div className="w-12 h-12 rounded-full bg-amber-500/10 backdrop-blur-xl border border-white shadow-sm text-amber-600 flex items-center justify-center shrink-0"><Repeat size={20} /></div>
           <div>
             <p className="text-sm font-medium text-slate-900">{t('recurringTitle')}</p>
             <p className="text-xs text-slate-500 mt-1">{t('recurringDesc')}</p>
           </div>
         </motion.div>
         <motion.div variants={{ hidden: { opacity: 0, y: 20, filter: "blur(8px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)" } }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} className="bg-white p-4 rounded-lg border border-slate-100 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><Clock size={20} /></div>
+          <div className="w-12 h-12 rounded-full bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm text-emerald-600 flex items-center justify-center shrink-0"><Clock size={20} /></div>
           <div>
             <p className="text-sm font-medium text-slate-900">{t('taskTitle')}</p>
             <p className="text-xs text-slate-500 mt-1">{t('taskDesc')}</p>
@@ -1925,65 +1965,65 @@ const HomeView = React.memo(({
       {sections.quickActions !== false && (
         <div className="mt-3 px-6">
           <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar p-3">
-              <button onClick={() => onQuickAction('expense')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px]">
-              <div className="w-14 h-14 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 group-hover:bg-rose-100 transition-colors">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar p-3 min-w-0 snap-x snap-mandatory">
+              <button onClick={() => onQuickAction('expense')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
+              <div className="w-14 h-14 rounded-full bg-rose-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-rose-500 group-hover:bg-rose-500/20 transition-all shadow-sm">
                 <Minus size={24} strokeWidth={2.5} />
               </div>
               <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('expense') || 'খরচ'}</span>
             </button>
             
-            <button onClick={() => onQuickAction('income')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px]">
-              <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-100 transition-colors">
+            <button onClick={() => onQuickAction('income')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
+              <div className="w-14 h-14 rounded-full bg-emerald-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500/20 transition-all shadow-sm">
                 <Plus size={24} strokeWidth={2.5} />
               </div>
               <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('income') || 'আয়'}</span>
             </button>
             
-            <button onClick={() => onQuickAction('tasks')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px]">
-              <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 group-hover:bg-blue-100 transition-colors">
+            <button onClick={() => onQuickAction('tasks')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
+              <div className="w-14 h-14 rounded-full bg-blue-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-blue-500 group-hover:bg-blue-500/20 transition-all shadow-sm">
                 <CheckCircle2 size={24} strokeWidth={2.5} />
               </div>
               <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('tasks') || 'টাস্ক'}</span>
             </button>
             
-            <button onClick={() => onQuickAction('debt')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px]">
-              <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 group-hover:bg-amber-100 transition-colors">
+            <button onClick={() => onQuickAction('debt')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
+              <div className="w-14 h-14 rounded-full bg-amber-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-amber-500 group-hover:bg-amber-500/20 transition-all shadow-sm">
                 <Users size={24} strokeWidth={2.5} />
               </div>
               <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('debt') || 'দেনা-পাওনা'}</span>
             </button>
 
-            <button onClick={() => onQuickAction('reminder')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px]">
-              <div className="w-14 h-14 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 group-hover:bg-purple-100 transition-colors">
+            <button onClick={() => onQuickAction('reminder')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
+              <div className="w-14 h-14 rounded-full bg-purple-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-purple-500 group-hover:bg-purple-500/20 transition-all shadow-sm">
                 <Bell size={24} strokeWidth={2.5} />
               </div>
               <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('reminder') || 'রিমাইন্ডার'}</span>
             </button>
 
-            <button onClick={() => onQuickAction('note')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px]">
-              <div className="w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 group-hover:bg-indigo-100 transition-colors">
+            <button onClick={() => onQuickAction('note')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
+              <div className="w-14 h-14 rounded-full bg-indigo-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-indigo-500 group-hover:bg-indigo-500/20 transition-all shadow-sm">
                 <FileText size={24} strokeWidth={2.5} />
               </div>
               <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('note') || 'নোট'}</span>
             </button>
 
-            <button onClick={() => onQuickAction('recurring')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px]">
-              <div className="w-14 h-14 rounded-full bg-cyan-50 flex items-center justify-center text-cyan-500 group-hover:bg-cyan-100 transition-colors">
+            <button onClick={() => onQuickAction('recurring')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
+              <div className="w-14 h-14 rounded-full bg-cyan-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-cyan-500 group-hover:bg-cyan-500/20 transition-all shadow-sm">
                 <Repeat size={24} strokeWidth={2.5} />
               </div>
               <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('recurring') || 'রিকোয়িং'}</span>
             </button>
 
             <button onClick={() => onQuickAction('subscription')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px]">
-              <div className="w-14 h-14 rounded-full bg-pink-50 flex items-center justify-center text-pink-500 group-hover:bg-pink-100 transition-colors">
+              <div className="w-14 h-14 rounded-full bg-pink-500/10 backdrop-blur-md border border-pink-500/20 flex items-center justify-center text-pink-500 group-hover:bg-pink-500/20 transition-all shadow-sm">
                 <CreditCard size={24} strokeWidth={2.5} />
               </div>
               <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('subscription') || 'সাবস্ক্রিপশন'}</span>
             </button>
 
             <button onClick={() => onQuickAction('add_shortcut')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px]">
-              <div className="w-14 h-14 rounded-full border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 group-hover:border-slate-300 group-hover:text-slate-400 transition-all">
+              <div className="w-14 h-14 rounded-full bg-slate-500/5 backdrop-blur-md border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 group-hover:border-slate-300 group-hover:bg-slate-500/10 transition-all shadow-sm">
                 <Plus size={24} strokeWidth={2} />
               </div>
               <span className="text-[10px] font-medium text-slate-400 truncate w-full text-center">{t('add') || 'যোগ করুন'}</span>
@@ -2130,7 +2170,7 @@ const TransactionsView = React.memo(({
                 "px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all",
                 filterType === type 
                   ? "bg-zinc-900 text-zinc-50 shadow-lg shadow-zinc-900/20" 
-                  : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                  : "bg-slate-500/10 backdrop-blur-md text-slate-600 border border-slate-200/50 hover:bg-slate-500/20 shadow-sm"
               )}
             >
               {t(type)}
@@ -2151,7 +2191,7 @@ const TransactionsView = React.memo(({
   );
 });
 
-const AnalysisView = React.memo(({ searchQuery, setSearchQuery, onSearchFocus, totals, transactions }: { searchQuery: string, setSearchQuery: (q: string) => void, onSearchFocus: () => void, totals: any, transactions: any[] }) => {
+const AnalysisViewContent = React.memo(({ searchQuery, setSearchQuery, onSearchFocus, totals, transactions }: { searchQuery: string, setSearchQuery: (q: string) => void, onSearchFocus: () => void, totals: any, transactions: any[] }) => {
   const { t, currency, language, formatAmount } = useLanguage();
   
   const translatedPieData = useMemo(() => {
@@ -2160,11 +2200,13 @@ const AnalysisView = React.memo(({ searchQuery, setSearchQuery, onSearchFocus, t
     
     expenses.forEach(tx => {
       const cat = tx.category || 'Others';
-      categoryTotals[cat] = (categoryTotals[cat] || 0) + tx.amount;
+      const amount = Number(tx.amount) || 0;
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + amount;
     });
 
     const data = Object.entries(categoryTotals)
       .map(([name, value]) => ({ name, value }))
+      .filter(item => item.value > 0)
       .sort((a, b) => b.value - a.value);
       
     if (data.length === 0) {
@@ -2173,7 +2215,7 @@ const AnalysisView = React.memo(({ searchQuery, setSearchQuery, onSearchFocus, t
     
     return data.map(item => ({
       ...item,
-      name: t(item.name.toLowerCase().replace(' ', '')) || item.name
+      name: typeof item.name === 'string' ? (t(item.name.toLowerCase().replace(/\s+/g, '')) || item.name) : String(item.name)
     }));
   }, [transactions, t]);
 
@@ -2182,9 +2224,9 @@ const AnalysisView = React.memo(({ searchQuery, setSearchQuery, onSearchFocus, t
     if (expenses.length === 0) return 0;
     
     const totalExpense = expenses.reduce((sum, tx) => sum + tx.amount, 0);
-    const dates = expenses.map(tx => new Date(tx.date).getTime());
+    const dates = expenses.map(tx => new Date(tx.date).getTime()).filter(d => !isNaN(d));
     
-    if (dates.length === 0) return 0;
+    if (dates.length === 0) return totalExpense;
     
     const minDate = Math.min(...dates);
     const maxDate = Math.max(...dates);
@@ -2193,69 +2235,305 @@ const AnalysisView = React.memo(({ searchQuery, setSearchQuery, onSearchFocus, t
     return totalExpense / daysDiff;
   }, [transactions]);
 
+  const monthlyTrendData = useMemo(() => {
+    const months: Record<string, { month: string, income: number, expense: number }> = {};
+    const last6Months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date();
+      d.setDate(1); // Fix date overflow (e.g., 31st of month)
+      d.setMonth(d.getMonth() - i);
+      return d.toLocaleString('default', { month: 'short' });
+    }).reverse();
+
+    last6Months.forEach(m => {
+      months[m] = { month: m, income: 0, expense: 0 };
+    });
+
+    transactions.forEach(tx => {
+      const d = new Date(tx.date);
+      const m = d.toLocaleString('default', { month: 'short' });
+      const amount = Number(tx.amount) || 0;
+      if (months[m]) {
+        if (tx.type === 'income') months[m].income += amount;
+        if (tx.type === 'expense') months[m].expense += amount;
+      }
+    });
+
+    return Object.values(months);
+  }, [transactions]);
+
+  const topCategories = useMemo(() => {
+    const expenses = transactions.filter(tx => tx.type === 'expense');
+    const total = expenses.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+    const categoryTotals: Record<string, number> = {};
+    
+    expenses.forEach(tx => {
+      const cat = tx.category || 'Others';
+      const amount = Number(tx.amount) || 0;
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + amount;
+    });
+
+    return Object.entries(categoryTotals)
+      .map(([name, value]) => ({ 
+        name: typeof name === 'string' ? (t(name.toLowerCase().replace(/\s+/g, '')) || name) : String(name), 
+        value,
+        percentage: total > 0 ? (value / total) * 100 : 0
+      }))
+      .filter(item => item.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [transactions, t]);
+
+  const savingsRate = useMemo(() => {
+    const income = transactions.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+    const expense = transactions.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+    if (income === 0) return 0;
+    return Math.max(0, ((income - expense) / income) * 100);
+  }, [transactions]);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.95 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      scale: 1,
+      transition: { type: 'spring', stiffness: 100, damping: 15 }
+    }
+  };
+
   return (
-  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pb-32 bg-slate-50 min-h-screen">
+  <motion.div 
+    variants={containerVariants}
+    initial="hidden"
+    animate="visible"
+    exit="hidden"
+    className="pb-32 bg-slate-50 min-h-screen"
+  >
     <div className="px-6 pt-6">
       <h2 className="text-slate-900 font-medium text-2xl mb-6">{t('analysis')}</h2>
-      <div className="bg-white p-6 rounded-lg border border-slate-100 shadow-sm mb-6">
-      <h3 className="text-slate-900 font-medium mb-4">{t('expenseDistribution')}</h3>
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <RePieChart>
-            <Pie
-              data={translatedPieData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={80}
-              paddingAngle={5}
-              dataKey="value"
-            >
-              {translatedPieData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <ReTooltip />
-          </RePieChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="grid grid-cols-2 gap-4 mt-4">
-        {translatedPieData.map((item) => (
-          <div key={item.name} className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[translatedPieData.indexOf(item) % COLORS.length] }} />
-            <span className="text-xs text-slate-500 font-medium">{item.name}</span>
+      
+      {/* App-consistent Summary Card with 3D feel */}
+      <motion.div 
+        variants={itemVariants}
+        className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-2xl text-white mb-6 overflow-hidden relative shadow-lg shadow-indigo-200 group"
+      >
+        <div className="relative z-10">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest">{t('averageDailySpend')}</p>
+              <h3 className="text-3xl font-bold mt-1 tracking-tighter">{formatAmount(averageDailySpend)}</h3>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center shadow-lg">
+              <TrendingUp size={24} className="text-white" />
+            </div>
           </div>
-        ))}
-      </div>
-    </div>
+          <div className="mt-6">
+            <div className="flex justify-between text-[10px] text-white/70 mb-1.5 uppercase font-bold tracking-wider">
+              <span>{t('savingsRate')}</span>
+              <span>{savingsRate.toFixed(1)}%</span>
+            </div>
+            <div className="h-2 bg-black/20 rounded-full overflow-hidden border border-white/10">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${savingsRate}%` }}
+                className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Decorative elements matching app style */}
+        <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+        <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl" />
+      </motion.div>
 
-    <div className="bg-zinc-900 p-6 rounded-lg text-zinc-50 mb-6 overflow-hidden relative">
-      <div className="relative z-10">
-        <p className="text-slate-400 text-xs font-medium uppercase">{t('averageDailySpend')}</p>
-        <h3 className="text-3xl font-medium mt-1">{formatAmount(averageDailySpend)}</h3>
-        <p className="text-emerald-400 text-xs font-medium mt-2 flex items-center gap-1">
-          <ArrowDownLeft size={14} /> 12% {t('lowerThanLastMonth')}
-        </p>
-      </div>
-      <div className="absolute right-0 bottom-0 opacity-20">
-        <div className="w-32 h-32 bg-emerald-500 rounded-full blur-3xl" />
-      </div>
-    </div>
+      {/* Monthly Trend Chart */}
+      <motion.div 
+        variants={itemVariants}
+        className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm mb-6"
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-slate-900 text-sm font-bold tracking-tight">{t('monthlyTrend')}</h3>
+          <div className="flex gap-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase">{t('income')}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-rose-500" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase">{t('expense')}</span>
+            </div>
+          </div>
+        </div>
+        <div className="h-56">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={monthlyTrendData}>
+              <defs>
+                <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis 
+                dataKey="month" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }} 
+                dy={8}
+              />
+              <YAxis hide />
+              <ReTooltip 
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)', fontSize: '11px', fontWeight: '600' }}
+              />
+              <Area type="monotone" dataKey="income" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorIncome)" />
+              <Area type="monotone" dataKey="expense" stroke="#f43f5e" strokeWidth={2.5} fillOpacity={1} fill="url(#colorExpense)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.div>
 
-    <div className="bg-white p-6 rounded-lg border border-slate-100 shadow-sm">
-      <h3 className="text-slate-900 font-medium mb-4">{t('categoryTrends')}</h3>
-      <div className="h-48">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={translatedPieData}>
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-            <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {/* Expense Distribution */}
+        <motion.div 
+          variants={itemVariants}
+          className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm"
+        >
+          <h3 className="text-slate-900 text-sm font-bold tracking-tight mb-4">{t('expenseDistribution')}</h3>
+          <div className="h-56 relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <RePieChart>
+                <Pie
+                  data={translatedPieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={65}
+                  outerRadius={85}
+                  paddingAngle={5}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {translatedPieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <ReTooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)' }}
+                />
+              </RePieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t('total')}</span>
+              <span className="text-lg font-bold text-slate-900">{formatAmount(totals.expense)}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            {translatedPieData.slice(0, 4).map((item, index) => (
+              <div key={`${item.name}-${index}`} className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                <span className="text-[9px] text-slate-600 font-bold truncate">{item.name}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Top Categories */}
+        <motion.div 
+          variants={itemVariants}
+          className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm"
+        >
+          <h3 className="text-slate-900 text-sm font-bold tracking-tight mb-6">{t('topSpending')}</h3>
+          <div className="space-y-4">
+            {topCategories.map((cat, i) => (
+              <div key={`${cat.name}-${i}`} className="space-y-1.5">
+                <div className="flex justify-between items-end">
+                  <span className="text-[11px] font-bold text-slate-700">{cat.name}</span>
+                  <span className="text-[11px] font-bold text-slate-900">{formatAmount(cat.value)}</span>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${cat.percentage}%` }}
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
       </div>
-    </div>
+
+      {/* Category Trends Bar Chart */}
+      <motion.div 
+        variants={itemVariants}
+        className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm"
+      >
+        <h3 className="text-slate-900 text-sm font-bold tracking-tight mb-6">{t('categoryTrends')}</h3>
+        <div className="h-52">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={translatedPieData}>
+              <XAxis 
+                dataKey="name" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 600 }} 
+                dy={8}
+              />
+              <YAxis hide />
+              <ReTooltip 
+                cursor={{ fill: '#f8fafc', radius: 8 }}
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)' }}
+              />
+              <Bar dataKey="value" fill="#6366f1" radius={[8, 8, 8, 8]} barSize={24}>
+                {translatedPieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.div>
     </div>
   </motion.div>
   );
+});
+
+const AnalysisView = React.memo((props: { searchQuery: string, setSearchQuery: (q: string) => void, onSearchFocus: () => void, totals: any, transactions: any[] }) => {
+  const [isReady, setIsReady] = useState(false);
+  const { t } = useLanguage();
+
+  useEffect(() => {
+    // Defer rendering to allow smooth tab transition
+    const timer = setTimeout(() => setIsReady(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!isReady) {
+    return (
+      <div className="flex-1 overflow-y-auto pb-24 bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
+          <p className="text-sm text-slate-500 font-medium">{t('loading') || 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <AnalysisViewContent {...props} />;
 });
 
 const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSearchQuery, onSearchFocus, totals, managementData, transactions }: { 
@@ -2271,6 +2549,19 @@ const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSea
   const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [activeOptionsIndex, setActiveOptionsIndex] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveOptionsIndex(null);
+    };
+    if (activeOptionsIndex !== null) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [activeOptionsIndex]);
+
   const categoryCount = Object.values(managementData.categories).reduce((sum: number, list: any) => sum + list.length, 0);
   
   const recurringCount = transactions.filter(tx => tx.status === 'Recurring').length + managementData.recurring.length;
@@ -2282,46 +2573,47 @@ const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSea
       title: t('basicSetup'),
       subtitle: t('coreData'),
       items: [
-        { label: t('accounts'), id: 'Accounts', icon: Wallet, count: managementData.accounts.length, color: 'text-indigo-600', bg: 'bg-indigo-500/20', sub: t('accounts') },
-        { label: t('categories'), id: 'Categories', icon: Tag, count: categoryCount, color: 'text-orange-600', bg: 'bg-orange-500/20', sub: t('categories') },
-        { label: t('subCategories'), id: 'Sub Categories', icon: Layers, count: managementData.subCategories.length, color: 'text-teal-600', bg: 'bg-teal-500/20', sub: t('subCategories') },
-        { label: t('contacts'), id: 'Contacts', icon: Users, count: managementData.persons.length, color: 'text-pink-600', bg: 'bg-pink-500/20', sub: t('contacts') },
+        { label: t('accounts'), id: 'Accounts', icon: Wallet, count: managementData.accounts.length, color: 'text-indigo-600', bg: 'bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('accounts') },
+        { label: t('categories'), id: 'Categories', icon: Tag, count: categoryCount, color: 'text-orange-600', bg: 'bg-orange-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('categories') },
+        { label: t('subCategories'), id: 'Sub Categories', icon: Layers, count: managementData.subCategories.length, color: 'text-teal-600', bg: 'bg-teal-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('subCategories') },
+        { label: t('contacts'), id: 'Contacts', icon: Users, count: managementData.persons.length, color: 'text-pink-600', bg: 'bg-pink-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('contacts') },
       ]
     },
     {
       title: t('moneyManagement'),
       subtitle: t('planning'),
       items: [
-        { label: t('budgets'), id: 'Budgets', icon: Target, count: managementData.budgets.length, color: 'text-rose-600', bg: 'bg-rose-500/20', sub: t('budgets') },
-        { label: t('financialGoals'), id: 'Financial Goals', icon: Star, count: 3, color: 'text-purple-600', bg: 'bg-purple-500/20', sub: t('financialGoals') },
+        { label: t('budgets'), id: 'Budgets', icon: Target, count: managementData.budgets.length, color: 'text-rose-600', bg: 'bg-rose-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('budgets') },
+        { label: t('financialGoals'), id: 'Financial Goals', icon: Star, count: 3, color: 'text-purple-600', bg: 'bg-purple-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('financialGoals') },
       ]
     },
     {
       title: t('assetsLiabilities'),
       subtitle: t('wealth'),
       items: [
-        { label: t('investments'), id: 'Investments', icon: Layout, count: managementData.investments.length, color: 'text-amber-600', bg: 'bg-amber-500/20', sub: t('investments') },
-        { label: t('fixedDeposits'), id: 'Fixed Deposits', icon: PiggyBank, count: managementData.fixedDeposits.length, color: 'text-cyan-600', bg: 'bg-cyan-500/20', sub: t('fixedDeposits') },
-        { label: t('payables'), id: 'Payables', icon: ArrowUpRight, count: managementData.payables.length, color: 'text-rose-600', bg: 'bg-rose-500/20', sub: t('payables') },
-        { label: t('receivables'), id: 'Receivables', icon: ArrowDownLeft, count: managementData.receivables.length, color: 'text-emerald-600', bg: 'bg-emerald-500/20', sub: t('receivables') },
+        { label: t('investments'), id: 'Investments', icon: Layout, count: managementData.investments.length, color: 'text-amber-600', bg: 'bg-amber-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('investments') },
+        { label: t('fixedDeposits'), id: 'Fixed Deposits', icon: PiggyBank, count: managementData.fixedDeposits.length, color: 'text-cyan-600', bg: 'bg-cyan-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('fixedDeposits') },
+        { label: t('payables'), id: 'Payables', icon: ArrowUpRight, count: managementData.payables.length, color: 'text-rose-600', bg: 'bg-rose-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('payables') },
+        { label: t('receivables'), id: 'Receivables', icon: ArrowDownLeft, count: managementData.receivables.length, color: 'text-emerald-600', bg: 'bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('receivables') },
       ]
     },
     {
       title: t('transactionStatus'),
       subtitle: t('tracking'),
       items: [
-        { label: t('recurring'), id: 'Recurring', icon: Repeat, count: recurringCount, color: 'text-blue-600', bg: 'bg-blue-500/20', sub: t('recurring') },
-        { label: t('pending'), id: 'Pending', icon: Clock, count: pendingCount, color: 'text-yellow-600', bg: 'bg-yellow-500/20', sub: t('pending') },
-        { label: t('receipts'), id: 'Receipts', icon: Receipt, count: receiptsCount, color: 'text-orange-600', bg: 'bg-orange-500/20', sub: t('receipts') },
+        { label: t('recurring'), id: 'Recurring', icon: Repeat, count: recurringCount, color: 'text-blue-600', bg: 'bg-blue-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('recurring') },
+        { label: t('pending'), id: 'Pending', icon: Clock, count: pendingCount, color: 'text-yellow-600', bg: 'bg-yellow-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('pending') },
+        { label: t('receipts'), id: 'Receipts', icon: Receipt, count: receiptsCount, color: 'text-orange-600', bg: 'bg-orange-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('receipts') },
       ]
     },
     {
       title: t('personalOrganization'),
       subtitle: t('productivity'),
       items: [
-        { label: t('tasks'), id: 'Tasks', icon: CheckCircle2, count: managementData.tasks.length, color: 'text-slate-600', bg: 'bg-slate-500/20', sub: t('tasks') },
-        { label: t('reminders'), id: 'Reminders', icon: Bell, count: managementData.reminders.length, color: 'text-blue-600', bg: 'bg-blue-500/20', sub: t('reminders') },
-        { label: t('notes'), id: 'Notes', icon: StickyNote, count: managementData.notes.length, color: 'text-emerald-600', bg: 'bg-emerald-500/20', sub: t('notes') },
+        { label: t('tasks'), id: 'Tasks', icon: CheckCircle2, count: managementData.tasks.length, color: 'text-slate-600', bg: 'bg-slate-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('tasks') },
+        { label: t('reminders'), id: 'Reminders', icon: Bell, count: managementData.reminders.length, color: 'text-blue-600', bg: 'bg-blue-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('reminders') },
+        { label: t('notes'), id: 'Notes', icon: StickyNote, count: managementData.notes.length, color: 'text-emerald-600', bg: 'bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('notes') },
+        { label: t('subscription'), id: 'Subscriptions', icon: CreditCard, count: managementData.subscriptions?.length || 0, color: 'text-pink-600', bg: 'bg-pink-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('subscription') },
       ]
     }
   ];
@@ -2396,60 +2688,6 @@ const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSea
                           >
                             <Plus size={18} strokeWidth={2.5} />
                           </div>
-                          
-                          <div className="relative">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveOptionsIndex(activeOptionsIndex === item.id ? null : item.id);
-                              }}
-                              className={cn(
-                                "p-1.5 rounded-md transition-all",
-                                activeOptionsIndex === item.id ? "text-slate-600 bg-slate-100" : "text-slate-300 hover:text-slate-600 hover:bg-slate-100"
-                              )}
-                            >
-                              <MoreVertical size={16} />
-                            </button>
-
-                            <AnimatePresence>
-                              {activeOptionsIndex === item.id && (
-                                <>
-                                  <motion.div 
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[150]" 
-                                    onClick={(e) => { e.stopPropagation(); setActiveOptionsIndex(null); }}
-                                  />
-                                  <motion.div 
-                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    transition={{ duration: 0.15 }}
-                                    className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-[160] overflow-hidden"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <div className="flex flex-col p-1">
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); onOpenDetail(item.id); setActiveOptionsIndex(null); }}
-                                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
-                                      >
-                                        <FileText size={14} />
-                                        {t('viewAll') || 'View All'}
-                                      </button>
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); onAddNew(item.label); setActiveOptionsIndex(null); }}
-                                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
-                                      >
-                                        <Plus size={14} />
-                                        {t('addNew') || 'Add New'}
-                                      </button>
-                                    </div>
-                                  </motion.div>
-                                </>
-                              )}
-                            </AnimatePresence>
-                          </div>
                         </div>
                       </div>
                       
@@ -2483,60 +2721,6 @@ const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSea
                           className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                         >
                           <Plus size={18} strokeWidth={2.5} />
-                        </div>
-                        
-                        <div className="relative">
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveOptionsIndex(activeOptionsIndex === item.id ? null : item.id);
-                            }}
-                            className={cn(
-                              "p-1.5 rounded-md transition-all",
-                              activeOptionsIndex === item.id ? "text-slate-600 bg-slate-100" : "text-slate-300 hover:text-slate-600 hover:bg-slate-100"
-                            )}
-                          >
-                            <MoreVertical size={16} />
-                          </button>
-
-                          <AnimatePresence>
-                            {activeOptionsIndex === item.id && (
-                              <>
-                                <motion.div 
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[150]" 
-                                  onClick={(e) => { e.stopPropagation(); setActiveOptionsIndex(null); }}
-                                />
-                                <motion.div 
-                                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  transition={{ duration: 0.15 }}
-                                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-[160] overflow-hidden"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <div className="flex flex-col p-1">
-                                    <button 
-                                      onClick={(e) => { e.stopPropagation(); onOpenDetail(item.id); setActiveOptionsIndex(null); }}
-                                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
-                                    >
-                                      <FileText size={14} />
-                                      {t('viewAll') || 'View All'}
-                                    </button>
-                                    <button 
-                                      onClick={(e) => { e.stopPropagation(); onAddNew(item.label); setActiveOptionsIndex(null); }}
-                                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
-                                    >
-                                      <Plus size={14} />
-                                      {t('addNew') || 'Add New'}
-                                    </button>
-                                  </div>
-                                </motion.div>
-                              </>
-                            )}
-                          </AnimatePresence>
                         </div>
                       </div>
                     </>
@@ -3493,6 +3677,7 @@ const ManagementDetailView = React.memo(({
     : label === 'Pending Tasks' || label === 'Pending' ? [...data.pending, ...transactions.filter((tx: any) => tx.status === 'Pending')]
     : label === 'Tasks' ? data.tasks
     : label === 'Recurring' ? [...data.recurring, ...transactions.filter((tx: any) => tx.status === 'Recurring')]
+    : label === 'Subscriptions' ? data.subscriptions
     : []) || [];
 
   const filteredItems = currentItems
@@ -3615,9 +3800,10 @@ const ManagementDetailView = React.memo(({
           className="flex items-center gap-3 flex-1 min-w-0 text-left"
         >
           <div 
-            className="w-11 h-11 rounded-md flex items-center justify-center shrink-0 overflow-hidden"
+            className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden backdrop-blur-md border shadow-sm"
             style={{ 
               backgroundColor: item.color ? `${item.color}15` : '#f8fafc', 
+              borderColor: item.color ? `${item.color}30` : '#e2e8f0',
               color: item.color || '#475569' 
             }}
           >
@@ -3672,12 +3858,12 @@ const ManagementDetailView = React.memo(({
             <div className="flex flex-col items-end gap-1 mr-1">
               {contactTotals.contactBalances[item.name]?.paona > 0 && (
                 <div className="font-medium text-[15px] text-emerald-600">
-                  +{formatAmount(contactTotals.contactBalances[item.name].paona)}
+                  {formatAmount(contactTotals.contactBalances[item.name].paona)}
                 </div>
               )}
               {contactTotals.contactBalances[item.name]?.dena > 0 && (
                 <div className="font-medium text-[15px] text-rose-600">
-                  -{formatAmount(contactTotals.contactBalances[item.name].dena)}
+                  {formatAmount(contactTotals.contactBalances[item.name].dena)}
                 </div>
               )}
               {(!contactTotals.contactBalances[item.name] || (contactTotals.contactBalances[item.name].paona === 0 && contactTotals.contactBalances[item.name].dena === 0)) && (
@@ -3697,6 +3883,7 @@ const ManagementDetailView = React.memo(({
           <div className="relative">
             <button 
               onClick={(e) => { e.stopPropagation(); setActiveOptionsIndex(activeOptionsIndex === idx ? null : idx); }}
+              onPointerDown={(e) => e.stopPropagation()}
               className={cn(
                 "p-1.5 rounded-md transition-all",
                 activeOptionsIndex === idx ? "text-slate-600 bg-slate-100" : "text-slate-300 hover:text-slate-600 hover:bg-slate-100"
@@ -3707,67 +3894,57 @@ const ManagementDetailView = React.memo(({
 
             <AnimatePresence>
               {activeOptionsIndex === idx && (
-                <>
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[150]" 
-                    onClick={(e) => { e.stopPropagation(); setActiveOptionsIndex(null); }}
-                  />
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-[160] overflow-hidden"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex flex-col p-1">
-                      {label === 'Tasks' && (
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            const updatedItem = { ...item, status: item.status === 'completed' ? 'pending' : 'completed' };
-                            onUpdate(label, originalIdx, updatedItem);
-                            setActiveOptionsIndex(null);
-                          }}
-                          className={cn(
-                            "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-left",
-                            item.status === 'completed' ? "text-emerald-600 hover:bg-emerald-50" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                          )}
-                        >
-                          <Check size={14} />
-                          {item.status === 'completed' ? t('markPending') || 'Mark Pending' : t('markCompleted') || 'Mark Completed'}
-                        </button>
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 z-[160] overflow-hidden py-1"
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  {label === 'Tasks' && (
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        const updatedItem = { ...item, status: item.status === 'completed' ? 'pending' : 'completed' };
+                        onUpdate(label, originalIdx, updatedItem);
+                        setActiveOptionsIndex(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors text-left",
+                        item.status === 'completed' ? "text-emerald-600 hover:bg-emerald-50" : "text-slate-700 hover:text-slate-900 hover:bg-slate-50"
                       )}
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); startEdit(item, originalIdx); setActiveOptionsIndex(null); }}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
-                      >
-                        <Edit2 size={14} />
-                        {t('edit') || 'Edit'}
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); onToggleArchive(label, originalIdx, isCategory ? (activeType === 'all' ? item.type : activeType) : undefined); setActiveOptionsIndex(null); }}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-left",
-                          item.isArchived ? "text-amber-600 hover:bg-amber-50" : "text-slate-600 hover:text-amber-600 hover:bg-amber-50"
-                        )}
-                      >
-                        {item.isArchived ? <RotateCcw size={14} /> : <Archive size={14} />}
-                        {item.isArchived ? t('unarchive') || 'Unarchive' : t('archive') || 'Archive'}
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); onRemove(label, originalIdx, isCategory ? (activeType === 'all' ? item.type : activeType) : undefined); setActiveOptionsIndex(null); }}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-left"
-                      >
-                        <Trash2 size={14} />
-                        {t('delete') || 'Delete'}
-                      </button>
-                    </div>
-                  </motion.div>
-                </>
+                    >
+                      <Check size={16} />
+                      {item.status === 'completed' ? t('markPending') || 'Mark Pending' : t('markCompleted') || 'Mark Completed'}
+                    </button>
+                  )}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); startEdit(item, originalIdx); setActiveOptionsIndex(null); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors text-left"
+                  >
+                    <Edit2 size={16} />
+                    {t('edit') || 'Edit'}
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onToggleArchive(label, originalIdx, isCategory ? (activeType === 'all' ? item.type : activeType) : undefined); setActiveOptionsIndex(null); }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors text-left",
+                      item.isArchived ? "text-amber-600 hover:bg-amber-50" : "text-slate-700 hover:text-amber-600 hover:bg-amber-50"
+                    )}
+                  >
+                    {item.isArchived ? <RotateCcw size={16} /> : <Archive size={16} />}
+                    {item.isArchived ? t('unarchive') || 'Unarchive' : t('archive') || 'Archive'}
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onRemove(label, originalIdx, isCategory ? (activeType === 'all' ? item.type : activeType) : undefined); setActiveOptionsIndex(null); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-600 transition-colors text-left"
+                  >
+                    <Trash2 size={16} />
+                    {t('delete') || 'Delete'}
+                  </button>
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
@@ -3813,7 +3990,7 @@ const ManagementDetailView = React.memo(({
       </div>
 
       <div className="px-6 py-4 bg-white border-b border-slate-100 sticky top-[89px] z-10">
-        <div className="relative group">
+        <div className={cn("relative group", (label === 'Categories' || label === 'Sub Categories') && "mb-4")}>
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
           <input 
             type="text" 
@@ -3831,6 +4008,55 @@ const ManagementDetailView = React.memo(({
             </button>
           )}
         </div>
+
+        {label === 'Categories' && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            {['all', 'expense', 'income', 'dena', 'paona', 'joma', 'invest'].map(type => (
+              <button
+                key={type}
+                onClick={() => setActiveType(type as any)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
+                  activeType === type 
+                    ? "bg-slate-900 text-white" 
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                )}
+              >
+                {t(type) || type.charAt(0).toUpperCase() + type.slice(1)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {label === 'Sub Categories' && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            <button
+              onClick={() => setSubCategoryFilter('All')}
+              className={cn(
+                "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
+                subCategoryFilter === 'All'
+                  ? "bg-slate-900 text-white" 
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              )}
+            >
+              {t('all') || 'All'}
+            </button>
+            {Object.values(data.categories).flat().map((cat: any) => (
+              <button
+                key={cat.id || cat.name}
+                onClick={() => setSubCategoryFilter(cat.name)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
+                  subCategoryFilter === cat.name
+                    ? "bg-slate-900 text-white" 
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                )}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {label === 'Contacts' && (
@@ -3943,6 +4169,7 @@ const ManagementDetailView = React.memo(({
                               e.stopPropagation();
                               setActiveOptionsIndex(activeOptionsIndex === idx ? null : idx);
                             }}
+                            onPointerDown={(e) => e.stopPropagation()}
                             className={cn(
                               "p-2 rounded-lg transition-all",
                               activeOptionsIndex === idx ? "bg-white/20 text-white" : "text-white/50 hover:bg-white/10 hover:text-white"
@@ -3953,74 +4180,64 @@ const ManagementDetailView = React.memo(({
 
                           <AnimatePresence>
                             {activeOptionsIndex === idx && (
-                              <>
-                                <motion.div 
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[150]" 
-                                  onClick={(e) => { e.stopPropagation(); setActiveOptionsIndex(null); }}
-                                />
-                                <motion.div 
-                                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  transition={{ duration: 0.15 }}
-                                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-[160] overflow-hidden"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <div className="flex flex-col p-1">
-                                    {!item.isArchived && (
-                                      <>
-                                        <button 
-                                          onClick={(e) => { e.stopPropagation(); onTogglePin?.(originalIdx); setActiveOptionsIndex(null); }}
-                                          className={cn(
-                                            "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-left",
-                                            item.isPinned ? "text-amber-600 hover:bg-amber-50" : "text-slate-600 hover:text-amber-600 hover:bg-amber-50"
-                                          )}
-                                        >
-                                          <Pin size={14} className={item.isPinned ? "fill-current" : ""} />
-                                          {item.isPinned ? t('unpin') || 'Unpin' : t('pin') || 'Pin'}
-                                        </button>
-                                        <button 
-                                          onClick={(e) => { e.stopPropagation(); onSetDefault?.(originalIdx); setActiveOptionsIndex(null); }}
-                                          className={cn(
-                                            "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-left",
-                                            item.isDefault ? "text-emerald-600 hover:bg-emerald-50" : "text-slate-600 hover:text-emerald-600 hover:bg-emerald-50"
-                                          )}
-                                        >
-                                          <Check size={14} />
-                                          {item.isDefault ? t('default') || 'Default' : t('setDefault') || 'Set Default'}
-                                        </button>
-                                      </>
-                                    )}
+                              <motion.div 
+                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 z-[160] overflow-hidden py-1"
+                                onClick={(e) => e.stopPropagation()}
+                                onPointerDown={(e) => e.stopPropagation()}
+                              >
+                                {!item.isArchived && (
+                                  <>
                                     <button 
-                                      onClick={(e) => { e.stopPropagation(); startEdit(item, originalIdx); setActiveOptionsIndex(null); }}
-                                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors text-left"
-                                    >
-                                      <Edit2 size={14} />
-                                      {t('edit') || 'Edit'}
-                                    </button>
-                                    <button 
-                                      onClick={(e) => { e.stopPropagation(); onToggleArchive(label, originalIdx, isCategory ? activeType : undefined); setActiveOptionsIndex(null); }}
+                                      onClick={(e) => { e.stopPropagation(); onTogglePin?.(originalIdx); setActiveOptionsIndex(null); }}
                                       className={cn(
-                                        "flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-left",
-                                        item.isArchived ? "text-amber-600 hover:bg-amber-50" : "text-slate-600 hover:text-amber-600 hover:bg-amber-50"
+                                        "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors text-left",
+                                        item.isPinned ? "text-amber-600 hover:bg-amber-50" : "text-slate-700 hover:text-amber-600 hover:bg-amber-50"
                                       )}
                                     >
-                                      {item.isArchived ? <RotateCcw size={14} /> : <Archive size={14} />}
-                                      {item.isArchived ? t('unarchive') || 'Unarchive' : t('archive') || 'Archive'}
+                                      <Pin size={16} className={item.isPinned ? "fill-current" : ""} />
+                                      {item.isPinned ? t('unpin') || 'Unpin' : t('pin') || 'Pin'}
                                     </button>
                                     <button 
-                                      onClick={(e) => { e.stopPropagation(); onRemove(label, originalIdx, isCategory ? activeType : undefined); setActiveOptionsIndex(null); }}
-                                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-left"
+                                      onClick={(e) => { e.stopPropagation(); onSetDefault?.(originalIdx); setActiveOptionsIndex(null); }}
+                                      className={cn(
+                                        "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors text-left",
+                                        item.isDefault ? "text-emerald-600 hover:bg-emerald-50" : "text-slate-700 hover:text-emerald-600 hover:bg-emerald-50"
+                                      )}
                                     >
-                                      <Trash2 size={14} />
-                                      {t('delete') || 'Delete'}
+                                      <Check size={16} />
+                                      {item.isDefault ? t('default') || 'Default' : t('setDefault') || 'Set Default'}
                                     </button>
-                                  </div>
-                                </motion.div>
-                              </>
+                                  </>
+                                )}
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); startEdit(item, originalIdx); setActiveOptionsIndex(null); }}
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors text-left"
+                                >
+                                  <Edit2 size={16} />
+                                  {t('edit') || 'Edit'}
+                                </button>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); onToggleArchive(label, originalIdx, isCategory ? activeType : undefined); setActiveOptionsIndex(null); }}
+                                  className={cn(
+                                    "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors text-left",
+                                    item.isArchived ? "text-amber-600 hover:bg-amber-50" : "text-slate-700 hover:text-amber-600 hover:bg-amber-50"
+                                  )}
+                                >
+                                  {item.isArchived ? <RotateCcw size={16} /> : <Archive size={16} />}
+                                  {item.isArchived ? t('unarchive') || 'Unarchive' : t('archive') || 'Archive'}
+                                </button>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); onRemove(label, originalIdx, isCategory ? activeType : undefined); setActiveOptionsIndex(null); }}
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-600 transition-colors text-left"
+                                >
+                                  <Trash2 size={16} />
+                                  {t('delete') || 'Delete'}
+                                </button>
+                              </motion.div>
                             )}
                           </AnimatePresence>
                         </div>
@@ -4532,7 +4749,7 @@ const ManagementDetailView = React.memo(({
                           "text-xl font-black tracking-tighter",
                           tx.type === 'income' || tx.type === 'paona' || tx.toAccount === viewingAccount.name ? "text-emerald-600" : "text-rose-600"
                         )}>
-                          {tx.type === 'income' || tx.type === 'paona' || tx.toAccount === viewingAccount.name ? '+' : '-'}{formatAmount(tx.amount)}
+                          {formatAmount(tx.amount)}
                         </p>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{tx.type}</p>
                       </div>
@@ -4771,13 +4988,8 @@ const CurrencySelectionView: React.FC<{
             )}
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shadow-sm border border-slate-200/50">
-                <img 
-                  src={`https://flagcdn.com/w80/${c.flagCode}.png`} 
-                  alt={c.country}
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shadow-sm border border-slate-200/50 text-2xl">
+                {c.icon}
               </div>
               <div className="text-left">
                 <h4 className="text-slate-900 font-medium text-[15px]">{c.name}</h4>
@@ -4947,68 +5159,240 @@ const QuickActionsView: React.FC<{
       <div className="p-6">
         <div className="grid grid-cols-3 gap-4">
           <button onClick={() => onQuickAction('expense')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-rose-50 hover:border-rose-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 group-hover:bg-rose-200 transition-colors">
+            <div className="w-14 h-14 rounded-full bg-rose-500/10 backdrop-blur-md border border-rose-500/20 flex items-center justify-center text-rose-500 group-hover:bg-rose-500/20 transition-all shadow-sm">
               <Minus size={24} strokeWidth={2.5} />
             </div>
             <span className="text-xs font-medium text-slate-700 text-center">{t('expense') || 'খরচ'}</span>
           </button>
           
           <button onClick={() => onQuickAction('income')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-emerald-50 hover:border-emerald-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-200 transition-colors">
+            <div className="w-14 h-14 rounded-full bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500/20 transition-all shadow-sm">
               <Plus size={24} strokeWidth={2.5} />
             </div>
             <span className="text-xs font-medium text-slate-700 text-center">{t('income') || 'আয়'}</span>
           </button>
           
           <button onClick={() => onQuickAction('tasks')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-blue-50 hover:border-blue-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 group-hover:bg-blue-200 transition-colors">
+            <div className="w-14 h-14 rounded-full bg-blue-500/10 backdrop-blur-md border border-blue-500/20 flex items-center justify-center text-blue-500 group-hover:bg-blue-500/20 transition-all shadow-sm">
               <CheckCircle2 size={24} strokeWidth={2.5} />
             </div>
             <span className="text-xs font-medium text-slate-700 text-center">{t('tasks') || 'টাস্ক'}</span>
           </button>
           
           <button onClick={() => onQuickAction('debt')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-amber-50 hover:border-amber-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 group-hover:bg-amber-200 transition-colors">
+            <div className="w-14 h-14 rounded-full bg-amber-500/10 backdrop-blur-md border border-amber-500/20 flex items-center justify-center text-amber-500 group-hover:bg-amber-500/20 transition-all shadow-sm">
               <Users size={24} strokeWidth={2.5} />
             </div>
             <span className="text-xs font-medium text-slate-700 text-center">{t('debt') || 'দেনা-পাওনা'}</span>
           </button>
 
           <button onClick={() => onQuickAction('reminder')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-purple-50 hover:border-purple-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center text-purple-500 group-hover:bg-purple-200 transition-colors">
+            <div className="w-14 h-14 rounded-full bg-purple-500/10 backdrop-blur-md border border-purple-500/20 flex items-center justify-center text-purple-500 group-hover:bg-purple-500/20 transition-all shadow-sm">
               <Bell size={24} strokeWidth={2.5} />
             </div>
             <span className="text-xs font-medium text-slate-700 text-center">{t('reminder') || 'রিমাইন্ডার'}</span>
           </button>
 
           <button onClick={() => onQuickAction('note')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-indigo-50 hover:border-indigo-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 group-hover:bg-indigo-200 transition-colors">
+            <div className="w-14 h-14 rounded-full bg-indigo-500/10 backdrop-blur-md border border-indigo-500/20 flex items-center justify-center text-indigo-500 group-hover:bg-indigo-500/20 transition-all shadow-sm">
               <FileText size={24} strokeWidth={2.5} />
             </div>
             <span className="text-xs font-medium text-slate-700 text-center">{t('note') || 'নোট'}</span>
           </button>
 
           <button onClick={() => onQuickAction('recurring')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-cyan-50 hover:border-cyan-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-500 group-hover:bg-cyan-200 transition-colors">
+            <div className="w-14 h-14 rounded-full bg-cyan-500/10 backdrop-blur-md border border-cyan-500/20 flex items-center justify-center text-cyan-500 group-hover:bg-cyan-500/20 transition-all shadow-sm">
               <Repeat size={24} strokeWidth={2.5} />
             </div>
             <span className="text-xs font-medium text-slate-700 text-center">{t('recurring') || 'রিকোয়িং'}</span>
           </button>
 
           <button onClick={() => onQuickAction('subscription')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-pink-50 hover:border-pink-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-pink-100 flex items-center justify-center text-pink-500 group-hover:bg-pink-200 transition-colors">
+            <div className="w-14 h-14 rounded-full bg-pink-500/10 backdrop-blur-md border border-pink-500/20 flex items-center justify-center text-pink-500 group-hover:bg-pink-500/20 transition-all shadow-sm">
               <CreditCard size={24} strokeWidth={2.5} />
             </div>
             <span className="text-xs font-medium text-slate-700 text-center">{t('subscription') || 'সাবস্ক্রিপশন'}</span>
           </button>
 
           <button onClick={() => onQuickAction('add_shortcut')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-all">
-            <div className="w-14 h-14 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 group-hover:border-slate-400 group-hover:text-slate-500 transition-all">
+            <div className="w-14 h-14 rounded-full bg-slate-500/5 backdrop-blur-md border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 group-hover:border-slate-400 group-hover:bg-slate-500/10 transition-all shadow-sm">
               <Plus size={24} strokeWidth={2} />
             </div>
             <span className="text-xs font-medium text-slate-500 text-center">{t('add') || 'যোগ করুন'}</span>
           </button>
         </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const WidgetSettingsView: React.FC<{ 
+  onBack: () => void,
+  enabled: boolean,
+  onToggle: (val: boolean) => void
+}> = ({ onBack, enabled, onToggle }) => {
+  const { t } = useLanguage();
+  const [style, setStyle] = useState('solid');
+  const [opacity, setOpacity] = useState(100);
+
+  return (
+    <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed inset-0 bg-white z-50 overflow-y-auto pb-20">
+      <div className="p-6 flex items-center gap-4 border-b border-slate-100 sticky top-0 bg-white/80 backdrop-blur-md z-10">
+        <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+          <ArrowLeft size={20} className="text-slate-600" />
+        </button>
+        <h2 className="text-slate-900 font-medium text-lg">{t('widgetSettings')}</h2>
+      </div>
+
+      <div className="p-6 space-y-8">
+        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-slate-900 font-medium">{t('enableWidget')}</h3>
+            <p className="text-slate-500 text-sm">{t('widgetDesc')}</p>
+          </div>
+          <button 
+            onClick={() => onToggle(!enabled)}
+            className={cn("w-12 h-6 rounded-full transition-colors relative", enabled ? "bg-emerald-500" : "bg-slate-300")}
+          >
+            <div className={cn("w-4 h-4 bg-white rounded-full absolute top-1 transition-transform", enabled ? "translate-x-7" : "translate-x-1")} />
+          </button>
+        </div>
+
+        {enabled && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">{t('widgetStyle')}</label>
+              <div className="grid grid-cols-2 gap-3">
+                {['solid', 'transparent'].map((s) => (
+                  <button 
+                    key={s}
+                    onClick={() => setStyle(s)}
+                    className={cn(
+                      "p-4 rounded-xl border text-sm font-medium transition-all",
+                      style === s ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                    )}
+                  >
+                    {t(s)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">{t('opacity')}</label>
+                <span className="text-xs font-medium text-emerald-600">{opacity}%</span>
+              </div>
+              <input 
+                type="range" 
+                min="10" 
+                max="100" 
+                value={opacity} 
+                onChange={(e) => setOpacity(parseInt(e.target.value))}
+                className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+              />
+            </div>
+
+            <div className="p-6 bg-slate-900 rounded-2xl shadow-xl overflow-hidden relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-blue-500/20 opacity-50" />
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                  <p className="text-slate-400 text-[10px] uppercase tracking-widest mb-1">Total Balance</p>
+                  <p className="text-white text-xl font-bold font-mono">$12,450.00</p>
+                </div>
+                <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
+                  <Plus size={20} />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+const FloatingBubbleSettingsView: React.FC<{ 
+  onBack: () => void,
+  enabled: boolean,
+  onToggle: (val: boolean) => void
+}> = ({ onBack, enabled, onToggle }) => {
+  const { t } = useLanguage();
+  const [size, setSize] = useState('medium');
+  const [opacity, setOpacity] = useState(80);
+
+  return (
+    <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed inset-0 bg-white z-50 overflow-y-auto pb-20">
+      <div className="p-6 flex items-center gap-4 border-b border-slate-100 sticky top-0 bg-white/80 backdrop-blur-md z-10">
+        <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+          <ArrowLeft size={20} className="text-slate-600" />
+        </button>
+        <h2 className="text-slate-900 font-medium text-lg">{t('floatingBubbleSettings')}</h2>
+      </div>
+
+      <div className="p-6 space-y-8">
+        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-slate-900 font-medium">{t('enableFloatingBubble')}</h3>
+            <p className="text-slate-500 text-sm">{t('floatingBubbleDesc')}</p>
+          </div>
+          <button 
+            onClick={() => onToggle(!enabled)}
+            className={cn("w-12 h-6 rounded-full transition-colors relative", enabled ? "bg-emerald-500" : "bg-slate-300")}
+          >
+            <div className={cn("w-4 h-4 bg-white rounded-full absolute top-1 transition-transform", enabled ? "translate-x-7" : "translate-x-1")} />
+          </button>
+        </div>
+
+        {enabled && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">{t('size')}</label>
+              <div className="grid grid-cols-3 gap-3">
+                {['small', 'medium', 'large'].map((s) => (
+                  <button 
+                    key={s}
+                    onClick={() => setSize(s)}
+                    className={cn(
+                      "p-3 rounded-xl border text-sm font-medium transition-all",
+                      size === s ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                    )}
+                  >
+                    {t(s)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">{t('opacity')}</label>
+                <span className="text-xs font-medium text-emerald-600">{opacity}%</span>
+              </div>
+              <input 
+                type="range" 
+                min="20" 
+                max="100" 
+                value={opacity} 
+                onChange={(e) => setOpacity(parseInt(e.target.value))}
+                className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+              />
+            </div>
+
+            <div className="flex justify-center p-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200 relative">
+              <div 
+                className={cn(
+                  "bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/40 transition-all",
+                  size === 'small' ? "w-10 h-10" : size === 'medium' ? "w-14 h-14" : "w-18 h-18"
+                )}
+                style={{ opacity: opacity / 100 }}
+              >
+                <Plus size={size === 'small' ? 20 : size === 'medium' ? 28 : 36} />
+              </div>
+              <p className="absolute bottom-4 text-[10px] text-slate-400 uppercase tracking-widest">Preview</p>
+            </div>
+          </motion.div>
+        )}
       </div>
     </motion.div>
   );
@@ -5026,7 +5410,13 @@ const SettingsView = React.memo(({
   darkMode, 
   setDarkMode,
   onOpenEditHome,
-  onOpenQuickActions
+  onOpenQuickActions,
+  widgetEnabled,
+  setWidgetEnabled,
+  floatingBubbleEnabled,
+  setFloatingBubbleEnabled,
+  onOpenWidgetSettings,
+  onOpenFloatingBubbleSettings
 }: { 
   onOpenWorkspace: (id: string) => void, 
   onOpenDetail: (label: string) => void,
@@ -5039,7 +5429,13 @@ const SettingsView = React.memo(({
   darkMode: boolean,
   setDarkMode: (value: boolean) => void,
   onOpenEditHome: () => void,
-  onOpenQuickActions: () => void
+  onOpenQuickActions: () => void,
+  widgetEnabled: boolean,
+  setWidgetEnabled: (value: boolean) => void,
+  floatingBubbleEnabled: boolean,
+  setFloatingBubbleEnabled: (value: boolean) => void,
+  onOpenWidgetSettings: () => void,
+  onOpenFloatingBubbleSettings: () => void
 }) => {
   const [privacyMode, setPrivacyMode] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
@@ -5078,7 +5474,7 @@ const SettingsView = React.memo(({
             className="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-emerald-500">
                 <Layout size={20} />
               </div>
               <div className="text-left">
@@ -5094,7 +5490,7 @@ const SettingsView = React.memo(({
             className="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-purple-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-purple-500">
                 <Zap size={20} />
               </div>
               <div className="text-left">
@@ -5107,7 +5503,7 @@ const SettingsView = React.memo(({
 
           <div className="flex items-center justify-between p-4 hover:bg-slate-200 transition-colors">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-500">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-indigo-500">
                 <Moon size={20} />
               </div>
               <div className="text-left">
@@ -5134,7 +5530,7 @@ const SettingsView = React.memo(({
             className="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 shadow-sm flex items-center justify-center text-emerald-500">
                 <Wallet size={20} />
               </div>
               <div className="text-left">
@@ -5160,7 +5556,7 @@ const SettingsView = React.memo(({
             className="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-blue-500/10 backdrop-blur-md border border-blue-500/20 shadow-sm flex items-center justify-center text-blue-500">
                 <Globe size={20} />
               </div>
               <div className="text-left">
@@ -5171,14 +5567,48 @@ const SettingsView = React.memo(({
             <ChevronRight size={16} className="text-slate-400" />
           </button>
 
-          <button className="w-full flex items-center justify-between p-4 hover:bg-slate-200 transition-colors">
+          <button className="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-purple-500/10 backdrop-blur-md border border-purple-500/20 shadow-sm flex items-center justify-center text-purple-500">
                 <Layout size={20} />
               </div>
               <div className="text-left">
                 <h4 className="text-slate-900 font-medium text-sm">{t('appIcon')}</h4>
                 <p className="text-slate-500 text-xs">{t('changeAppIcon')}</p>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-slate-400" />
+          </button>
+
+          {/* Widget Option */}
+          <button 
+            onClick={onOpenWidgetSettings}
+            className="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-amber-500/10 backdrop-blur-md border border-amber-500/20 shadow-sm flex items-center justify-center text-amber-500">
+                <LayoutGrid size={20} />
+              </div>
+              <div className="text-left">
+                <h4 className="text-slate-900 font-medium text-sm">{t('widget')}</h4>
+                <p className="text-slate-500 text-xs">{t('widgetDesc')}</p>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-slate-400" />
+          </button>
+
+          {/* Floating Bubble Option */}
+          <button 
+            onClick={onOpenFloatingBubbleSettings}
+            className="w-full flex items-center justify-between p-4 hover:bg-slate-200 transition-colors"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-rose-500/10 backdrop-blur-md border border-rose-500/20 shadow-sm flex items-center justify-center text-rose-500">
+                <Activity size={20} />
+              </div>
+              <div className="text-left">
+                <h4 className="text-slate-900 font-medium text-sm">{t('floatingBubble')}</h4>
+                <p className="text-slate-500 text-xs">{t('floatingBubbleDesc')}</p>
               </div>
             </div>
             <ChevronRight size={16} className="text-slate-400" />
@@ -5192,7 +5622,7 @@ const SettingsView = React.memo(({
         <div className="bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
           <div className="flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 shadow-sm flex items-center justify-center text-emerald-500">
                 <Shield size={20} />
               </div>
               <div>
@@ -5324,7 +5754,7 @@ const SettingsView = React.memo(({
           <div className="fixed inset-0 z-[400] flex items-end justify-center sm:items-center">
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-zinc-900/40 backdrop-blur-sm" 
+              className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" 
               onClick={() => setShowLanguageModal(false)} 
             />
             <motion.div 
@@ -5332,26 +5762,32 @@ const SettingsView = React.memo(({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-md bg-white rounded-t-lg sm:rounded-lg p-6 shadow-2xl overflow-hidden"
+              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-[410] pb-8 pt-3 px-6"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
-              <h3 className="text-xl font-medium text-slate-900 mb-6 text-center">{t('selectLanguage')}</h3>
-              
-              <div className="space-y-3">
+              <h3 className="text-lg font-medium text-slate-900 mb-4">{t('language') || 'Language'}</h3>
+              <div className="space-y-2">
                 <button 
                   onClick={() => { setLanguage('en'); setShowLanguageModal(false); }}
-                  className={cn("w-full flex items-center justify-between p-4 rounded-lg transition-all", language === 'en' ? "bg-blue-50 border-2 border-blue-500" : "bg-slate-50 border-2 border-transparent hover:bg-slate-100")}
+                  className={cn(
+                    "w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left",
+                    language === 'en' ? "bg-blue-50 text-blue-700" : "bg-slate-50 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+                  )}
                 >
-                  <span className={cn("font-medium", language === 'en' ? "text-blue-700" : "text-slate-700")}>{t('english')}</span>
-                  {language === 'en' && <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white"><Check size={14} /></div>}
+                  <span>{t('english')}</span>
+                  {language === 'en' && <Check size={18} />}
                 </button>
                 
                 <button 
                   onClick={() => { setLanguage('bn'); setShowLanguageModal(false); }}
-                  className={cn("w-full flex items-center justify-between p-4 rounded-lg transition-all", language === 'bn' ? "bg-blue-50 border-2 border-blue-500" : "bg-slate-50 border-2 border-transparent hover:bg-slate-100")}
+                  className={cn(
+                    "w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left",
+                    language === 'bn' ? "bg-blue-50 text-blue-700" : "bg-slate-50 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+                  )}
                 >
-                  <span className={cn("font-medium", language === 'bn' ? "text-blue-700" : "text-slate-700")}>{t('bengali')}</span>
-                  {language === 'bn' && <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white"><Check size={14} /></div>}
+                  <span>{t('bengali')}</span>
+                  {language === 'bn' && <Check size={18} />}
                 </button>
               </div>
             </motion.div>
@@ -5605,7 +6041,7 @@ const TransactionDetailView = React.memo(({ tx, onBack, onDelete, onEdit, transa
                         <p className="text-xs text-slate-500">{rep.account}</p>
                       </div>
                       <div className="text-right">
-                        <span className="text-sm font-medium text-emerald-600">+{formatAmount(rep.amount)}</span>
+                        <span className="text-sm font-medium text-emerald-600">{formatAmount(rep.amount)}</span>
                         {(rep.addToIncome || rep.addToExpense) && (
                           <p className="text-xs text-blue-500 font-medium uppercase">{t('balanceUpdated')}</p>
                         )}
@@ -5728,14 +6164,35 @@ const SelectionModal: React.FC<{
   items: any[];
   onSelect: (item: any) => void;
   onAdd: (item: string) => void;
-}> = ({ isOpen, onClose, title, items, onSelect, onAdd }) => {
+  modalType?: string;
+  managementData?: any;
+  initialActiveType?: string;
+}> = ({ isOpen, onClose, title, items, onSelect, onAdd, modalType, managementData, initialActiveType = 'all' }) => {
   const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [newItem, setNewItem] = useState('');
+  const [activeType, setActiveType] = useState<'all' | 'expense' | 'income' | 'dena' | 'paona' | 'joma' | 'invest'>(initialActiveType as any);
+  const [subCategoryFilter, setSubCategoryFilter] = useState('All');
+
+  // Update activeType if initialActiveType changes
+  useEffect(() => {
+    setActiveType(initialActiveType as any);
+  }, [initialActiveType]);
 
   if (!isOpen) return null;
 
-  const filteredItems = items.filter(item => 
+  let displayItems = items;
+  if (modalType === 'category' && managementData) {
+    displayItems = activeType === 'all' 
+      ? Object.entries(managementData.categories).flatMap(([type, list]: [string, any]) => list.map((item: any) => ({ ...item, type })))
+      : managementData.categories[activeType] || [];
+  } else if (modalType === 'subCategory' && managementData) {
+    displayItems = subCategoryFilter === 'All'
+      ? managementData.subCategories
+      : managementData.subCategories.filter((sub: any) => sub.parentCategory === subCategoryFilter);
+  }
+
+  const filteredItems = displayItems.filter((item: any) => 
     (typeof item === 'string' ? item : item.name).toLowerCase().includes(search.toLowerCase())
   );
 
@@ -5751,8 +6208,69 @@ const SelectionModal: React.FC<{
           <h3 className="text-lg font-medium">{title}</h3>
           <button onClick={onClose} className="text-slate-400">{t('close')}</button>
         </div>
+
+        <div className="relative mb-4">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input 
+            type="text" 
+            placeholder={t('search') || 'Search...'}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-100 text-slate-900 rounded-xl pl-10 pr-4 py-3 text-[14px] focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+          />
+        </div>
+
+        {modalType === 'category' && managementData && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
+            {['all', 'expense', 'income', 'dena', 'paona', 'joma', 'invest'].map(type => (
+              <button
+                key={type}
+                onClick={() => setActiveType(type as any)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
+                  activeType === type 
+                    ? "bg-slate-900 text-white" 
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                )}
+              >
+                {t(type) || type.charAt(0).toUpperCase() + type.slice(1)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {modalType === 'subCategory' && managementData && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
+            <button
+              onClick={() => setSubCategoryFilter('All')}
+              className={cn(
+                "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
+                subCategoryFilter === 'All'
+                  ? "bg-slate-900 text-white" 
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              )}
+            >
+              {t('all') || 'All'}
+            </button>
+            {Object.values(managementData.categories).flat().map((cat: any) => (
+              <button
+                key={cat.id || cat.name}
+                onClick={() => setSubCategoryFilter(cat.name)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
+                  subCategoryFilter === cat.name
+                    ? "bg-slate-900 text-white" 
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                )}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto mb-4">
-          {filteredItems.map((item, index) => (
+          {filteredItems.map((item: any, index: number) => (
             <button 
               key={index}
               onClick={() => { onSelect(item); onClose(); }}
@@ -6285,9 +6803,9 @@ const AddTransactionView = React.memo(({
         </div>
 
         {/* 5. Accounts/Wallets Section */}
-        <div className="mb-4 mx-6 flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
-          <h3 className="text-[11px] font-medium uppercase text-slate-400 tracking-wider whitespace-nowrap">{t('fromAccount')}</h3>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar flex-1">
+        <div className="mb-4 mx-6 flex items-center gap-4 min-w-0" onClick={(e) => e.stopPropagation()}>
+          <h3 className="text-[11px] font-medium uppercase text-slate-400 tracking-wider whitespace-nowrap shrink-0">{t('fromAccount')}</h3>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar flex-1 min-w-0 pb-1">
             {displayAccounts.map((acc: any) => {
               const IconComp = ICON_LIST.find(i => i.name === acc.icon)?.icon || Wallet;
               return (
@@ -6302,8 +6820,10 @@ const AddTransactionView = React.memo(({
                     setCategory('');
                   }}
                   className={cn(
-                    "min-w-[100px] h-[40px] rounded-lg flex items-center justify-center gap-2 transition-all shrink-0 px-4",
-                    account === acc.name ? "text-white shadow-md scale-[1.02]" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                    "min-w-[100px] h-[40px] rounded-lg flex items-center justify-center gap-2 transition-all shrink-0 px-4 backdrop-blur-md border shadow-sm",
+                    account === acc.name 
+                      ? "text-white scale-[1.02] border-white/30" 
+                      : "bg-slate-500/10 text-slate-600 hover:bg-slate-500/20 border-slate-200/50"
                   )}
                   style={account === acc.name ? { backgroundColor: acc.color || '#2563eb' } : {}}
                 >
@@ -6331,9 +6851,9 @@ const AddTransactionView = React.memo(({
         </div>
 
         {type === 'transfer' && (
-          <div className="mb-4 mx-6 flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-[11px] font-medium uppercase text-slate-400 tracking-wider whitespace-nowrap">{t('toAccount')}</h3>
-            <div className="flex gap-3 overflow-x-auto no-scrollbar flex-1">
+          <div className="mb-4 mx-6 flex items-center gap-4 min-w-0" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[11px] font-medium uppercase text-slate-400 tracking-wider whitespace-nowrap shrink-0">{t('toAccount')}</h3>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar flex-1 min-w-0 pb-2">
               {displayAccounts.map((acc: any) => {
                 const IconComp = ICON_LIST.find(i => i.name === acc.icon)?.icon || Wallet;
                 return (
@@ -6348,8 +6868,10 @@ const AddTransactionView = React.memo(({
                       setCategory('');
                     }}
                     className={cn(
-                      "min-w-[100px] h-[40px] rounded-lg flex items-center justify-center gap-2 transition-all shrink-0 px-4",
-                      toAccount === acc.name ? "text-white shadow-md scale-[1.02]" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                      "min-w-[100px] h-[40px] rounded-lg flex items-center justify-center gap-2 transition-all shrink-0 px-4 backdrop-blur-md border shadow-sm",
+                      toAccount === acc.name 
+                        ? "text-white scale-[1.02] border-white/30" 
+                        : "bg-slate-500/10 text-slate-600 hover:bg-slate-500/20 border-slate-200/50"
                     )}
                     style={toAccount === acc.name ? { backgroundColor: acc.color || '#2563eb' } : {}}
                   >
@@ -6397,7 +6919,7 @@ const AddTransactionView = React.memo(({
               >
                 <div className="flex items-center gap-3">
                   <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden"
+                    className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
                     style={{ 
                       backgroundColor: selectedSubCategoryData?.color ? `${selectedSubCategoryData.color}20` : (selectedCategoryData?.color ? `${selectedCategoryData.color}20` : '#e2e8f0'),
                       color: selectedSubCategoryData?.color || selectedCategoryData?.color || '#64748b'
@@ -6433,7 +6955,7 @@ const AddTransactionView = React.memo(({
             </div>
           ) : (
             <div className="flex flex-col-reverse" onClick={(e) => e.stopPropagation()}>
-              <div className="mx-6 flex gap-3 overflow-x-auto no-scrollbar pb-2">
+              <div className="mx-6 flex gap-3 overflow-x-auto no-scrollbar pb-3 min-w-0">
                 {currentCategories.map((cat: any) => {
                   const IconComp = ICON_LIST.find(i => i.name === cat.icon)?.icon || Tag;
                   const isSelected = category === cat.name;
@@ -6452,10 +6974,10 @@ const AddTransactionView = React.memo(({
                         }
                       }}
                       className={cn(
-                        "min-w-[100px] h-[40px] rounded-lg flex items-center justify-center gap-2 transition-all shrink-0 px-4",
+                        "min-w-[100px] h-[40px] rounded-lg flex items-center justify-center gap-2 transition-all shrink-0 px-4 backdrop-blur-md border shadow-sm",
                         isSelected 
-                          ? "bg-zinc-900 text-zinc-50 shadow-md scale-105" 
-                          : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                          ? "bg-zinc-900 text-zinc-50 scale-105 border-zinc-700" 
+                          : "bg-slate-500/10 text-slate-600 hover:bg-slate-500/20 border-slate-200/50"
                       )}
                     >
                       {cat.image ? (
@@ -6503,7 +7025,7 @@ const AddTransactionView = React.memo(({
                               className="flex flex-col items-center gap-2 group"
                             >
                               <div className={cn(
-                                "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 overflow-hidden",
+                                "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 overflow-hidden",
                                 isSelected 
                                   ? "bg-zinc-900 text-zinc-50 shadow-md scale-105" 
                                   : "bg-white border border-slate-100 group-hover:bg-slate-50"
@@ -6872,6 +7394,9 @@ const AddTransactionView = React.memo(({
             }}
             title={t('selectItem').replace('{item}', t(modalType))}
             items={getModalItems()}
+            modalType={modalType}
+            managementData={managementData}
+            initialActiveType={['expense', 'income', 'dena', 'paona', 'joma', 'invest'].includes(type) ? type : 'all'}
             onSelect={(item) => {
               if (modalType === 'category') setCategory(item.name);
               else if (modalType === 'subCategory') setSubCategory(item.name);
@@ -7586,6 +8111,16 @@ export default function App() {
     return saved ? JSON.parse(saved) : true; // Default to true as requested
   });
 
+  const [widgetEnabled, setWidgetEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('appWidgetEnabled');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  const [floatingBubbleEnabled, setFloatingBubbleEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('appFloatingBubbleEnabled');
+    return saved ? JSON.parse(saved) : false;
+  });
+
   useEffect(() => {
     localStorage.setItem('appDarkMode', JSON.stringify(darkMode));
     if (darkMode) {
@@ -7594,6 +8129,14 @@ export default function App() {
       document.documentElement.classList.remove('dark-mode');
     }
   }, [darkMode]);
+
+  useEffect(() => {
+    localStorage.setItem('appWidgetEnabled', JSON.stringify(widgetEnabled));
+  }, [widgetEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('appFloatingBubbleEnabled', JSON.stringify(floatingBubbleEnabled));
+  }, [floatingBubbleEnabled]);
 
   const t = (key: string) => {
     return (translations[language] as any)[key] || key;
@@ -7702,6 +8245,7 @@ export default function App() {
     tasks: [],
     budgets: [],
     recurring: [],
+    subscriptions: [],
     investments: [],
     fixedDeposits: [],
     payables: [],
@@ -7832,6 +8376,7 @@ export default function App() {
       case 'Pending': return 'pending';
       case 'Tasks': return 'tasks';
       case 'Recurring': return 'recurring';
+      case 'Subscriptions': return 'subscriptions';
       default: return null;
     }
   };
@@ -7944,6 +8489,65 @@ export default function App() {
     });
   };
 
+  const handleEditTransaction = useCallback((tx: any) => {
+    setSelectedTransaction(tx);
+    setActiveTab('edit');
+  }, []);
+
+  const handleDeleteTransaction = useCallback((id: string) => {
+    setTransactions(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const handleSearchFocus = useCallback(() => {
+    setIsSearchOpen(true);
+  }, []);
+
+  const handleFilterClick = useCallback(() => {
+    setShowFilterModal(true);
+  }, []);
+
+  const handleNotificationsClick = useCallback(() => {
+    setActiveTab('notifications');
+  }, []);
+
+  const handleViewAllClick = useCallback(() => {
+    setActiveTab('transactions');
+  }, []);
+
+  const handleQuickAction = useCallback((action: string) => {
+    if (action === 'expense') {
+      setInitialAddData({ type: 'expense' });
+      setActiveTab('add');
+    } else if (action === 'income') {
+      setInitialAddData({ type: 'income' });
+      setActiveTab('add');
+    } else if (action === 'debt') {
+      setInitialAddData({ type: 'dena' });
+      setActiveTab('add');
+    } else if (action === 'tasks') {
+      setManagementDetail({ label: 'Tasks', isAdding: true });
+    } else if (action === 'reminder') {
+      setManagementDetail({ label: 'Reminders', isAdding: true });
+    } else if (action === 'note') {
+      setManagementDetail({ label: 'Notes', isAdding: true });
+    } else if (action === 'recurring') {
+      setManagementDetail({ label: 'Recurring', isAdding: true });
+    } else if (action === 'subscription') {
+      setManagementDetail({ label: 'Subscriptions', isAdding: true });
+    } else if (action === 'add_shortcut') {
+      setInitialAddData(null);
+      setActiveTab('add');
+    }
+  }, []);
+
+  const handleOpenDetail = useCallback((label: string) => {
+    setManagementDetail({ label });
+  }, []);
+
+  const handleAddNew = useCallback((label: string) => {
+    setManagementDetail({ label, isAdding: true });
+  }, []);
+
   return (
     <LanguageContext.Provider value={contextValue}>
       <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
@@ -8021,80 +8625,48 @@ export default function App() {
                     key="home" 
                     transactions={transactions} 
                     onTransactionClick={setSelectedTransaction} 
-                    onEditTransaction={(tx) => {
-                      setSelectedTransaction(tx);
-                      setActiveTab('edit');
-                    }}
-                    onDeleteTransaction={(id) => {
-                      setTransactions(prev => prev.filter(t => t.id !== id));
-                    }}
+                    onEditTransaction={handleEditTransaction}
+                    onDeleteTransaction={handleDeleteTransaction}
                     totals={totals}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
-                    onFilter={() => setShowFilterModal(true)}
-                    onNotifications={() => setActiveTab('notifications')}
+                    onFilter={handleFilterClick}
+                    onNotifications={handleNotificationsClick}
                     onPdfExport={handlePdfExport}
-                    onViewAll={() => setActiveTab('transactions')}
-                    onSearchFocus={() => setIsSearchOpen(true)}
+                    onViewAll={handleViewAllClick}
+                    onSearchFocus={handleSearchFocus}
                     sections={homeSections}
-                    onQuickAction={(action) => {
-                      if (action === 'expense') {
-                        setInitialAddData({ type: 'expense' });
-                        setActiveTab('add');
-                      } else if (action === 'income') {
-                        setInitialAddData({ type: 'income' });
-                        setActiveTab('add');
-                      } else if (action === 'debt') {
-                        setInitialAddData({ type: 'dena' });
-                        setActiveTab('add');
-                      } else if (action === 'tasks' || action === 'reminder') {
-                        setShowAddReminderModal(true);
-                      } else if (action === 'note') {
-                        setInitialAddData({ type: 'expense', txName: 'Note: ' });
-                        setActiveTab('add');
-                      } else if (action === 'recurring' || action === 'subscription') {
-                        setInitialAddData({ type: 'expense', status: 'Recurring' });
-                        setActiveTab('add');
-                      } else if (action === 'add_shortcut') {
-                        setInitialAddData(null);
-                        setActiveTab('add');
-                      }
-                    }}
+                    onQuickAction={handleQuickAction}
                   />
                 ) : activeTab === 'transactions' ? (
                   <TransactionsView 
                     key="transactions" 
                     transactions={transactions} 
                     onTransactionClick={setSelectedTransaction} 
-                    onEditTransaction={(tx) => {
-                      setSelectedTransaction(tx);
-                      setActiveTab('edit');
-                    }}
-                    onDeleteTransaction={(id) => {
-                      setTransactions(prev => prev.filter(t => t.id !== id));
-                    }}
+                    onEditTransaction={handleEditTransaction}
+                    onDeleteTransaction={handleDeleteTransaction}
                     totals={totals}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
-                    onSearchFocus={() => setIsSearchOpen(true)}
+                    onSearchFocus={handleSearchFocus}
                   />
                 ) : activeTab === 'analysis' ? (
                   <AnalysisView 
                     key="analysis" 
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
-                    onSearchFocus={() => setIsSearchOpen(true)}
+                    onSearchFocus={handleSearchFocus}
                     totals={totals}
                     transactions={transactions}
                   />
                 ) : activeTab === 'management' ? (
                   <ManagementView 
                     key="management" 
-                    onOpenDetail={(label) => setManagementDetail({ label })} 
-                    onAddNew={(label) => setManagementDetail({ label, isAdding: true })}
+                    onOpenDetail={handleOpenDetail} 
+                    onAddNew={handleAddNew}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
-                    onSearchFocus={() => setIsSearchOpen(true)}
+                    onSearchFocus={handleSearchFocus}
                     totals={totals}
                     managementData={managementData}
                     transactions={transactions}
@@ -8114,6 +8686,12 @@ export default function App() {
                     setDarkMode={setDarkMode}
                     onOpenEditHome={() => setActiveTab('editHome')}
                     onOpenQuickActions={() => setActiveTab('quickActions')}
+                    widgetEnabled={widgetEnabled}
+                    setWidgetEnabled={setWidgetEnabled}
+                    floatingBubbleEnabled={floatingBubbleEnabled}
+                    setFloatingBubbleEnabled={setFloatingBubbleEnabled}
+                    onOpenWidgetSettings={() => setActiveTab('widgetSettings')}
+                    onOpenFloatingBubbleSettings={() => setActiveTab('floatingBubbleSettings')}
                   />
                 ) : activeTab === 'editHome' ? (
                   <EditHomePageView 
@@ -8121,6 +8699,20 @@ export default function App() {
                     onBack={() => setActiveTab('settings')} 
                     sections={homeSections}
                     onToggle={(id) => setHomeSections(prev => ({ ...prev, [id]: !prev[id as keyof typeof prev] }))}
+                  />
+                ) : activeTab === 'widgetSettings' ? (
+                  <WidgetSettingsView 
+                    key="widgetSettings"
+                    onBack={() => setActiveTab('settings')}
+                    enabled={widgetEnabled}
+                    onToggle={setWidgetEnabled}
+                  />
+                ) : activeTab === 'floatingBubbleSettings' ? (
+                  <FloatingBubbleSettingsView 
+                    key="floatingBubbleSettings"
+                    onBack={() => setActiveTab('settings')}
+                    enabled={floatingBubbleEnabled}
+                    onToggle={setFloatingBubbleEnabled}
                   />
                 ) : activeTab === 'quickActions' ? (
                   <QuickActionsView 
