@@ -61,6 +61,8 @@ import {
   Download,
   Globe,
   Cloud,
+  CloudUpload,
+  CloudDownload,
   Moon,
   Award,
   Lightbulb,
@@ -107,6 +109,7 @@ import {
 } from 'recharts';
 import { cn } from './utils';
 import { OnboardingView } from './OnboardingView';
+import { AuthView } from './AuthView';
 import { supabase } from './supabaseClient';
 import { Currency, Language, Transaction } from './types';
 import { CURRENCIES } from './constants';
@@ -5223,7 +5226,11 @@ const SettingsView = React.memo(({
   setFloatingBubbleEnabled,
   onOpenWidgetSettings,
   onOpenFloatingBubbleSettings,
-  onLogout
+  onLogout,
+  onConnectGoogle,
+  onBackupToDrive,
+  onRestoreFromDrive,
+  googleTokens
 }: { 
   onOpenWorkspace: (id: string) => void, 
   onOpenDetail: (label: string) => void,
@@ -5243,7 +5250,11 @@ const SettingsView = React.memo(({
   setFloatingBubbleEnabled: (value: boolean) => void,
   onOpenWidgetSettings: () => void,
   onOpenFloatingBubbleSettings: () => void,
-  onLogout: () => void
+  onLogout: () => void,
+  onConnectGoogle: () => void,
+  onBackupToDrive: () => void,
+  onRestoreFromDrive: () => void,
+  googleTokens: any
 }) => {
   const [privacyMode, setPrivacyMode] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
@@ -5277,6 +5288,80 @@ const SettingsView = React.memo(({
         </div>
         <ChevronRight size={20} className="text-slate-400" />
       </button>
+
+      {/* Backup & Sync */}
+      <div className="mb-8">
+        <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('backupAndSync') || 'Backup & Sync'}</h3>
+        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+          {!googleTokens ? (
+            <button 
+              onClick={onConnectGoogle}
+              className="w-full flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-[0.85rem] bg-blue-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-blue-500">
+                  <Globe size={20} />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-slate-900 font-medium text-sm">{t('connectGoogleDrive') || 'Connect Google Drive'}</h4>
+                  <p className="text-slate-500 text-xs">{t('backupToGoogleDriveDesc') || 'Backup your data to your Google Drive'}</p>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-slate-400" />
+            </button>
+          ) : (
+            <>
+              <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-emerald-50/50">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-[0.85rem] bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-emerald-500">
+                    <Check size={20} />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-slate-900 font-medium text-sm">{t('googleDriveConnected') || 'Google Drive Connected'}</h4>
+                    <p className="text-emerald-600 text-xs">{t('readyToBackup') || 'Ready to backup/restore'}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={onConnectGoogle}
+                  className="text-xs text-slate-400 hover:text-slate-600 underline"
+                >
+                  {t('reconnect') || 'Reconnect'}
+                </button>
+              </div>
+              <button 
+                onClick={onBackupToDrive}
+                className="w-full flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-[0.85rem] bg-blue-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-blue-500">
+                    <CloudUpload size={20} />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-slate-900 font-medium text-sm">{t('backupNow') || 'Backup Now'}</h4>
+                    <p className="text-slate-500 text-xs">{t('uploadToDrive') || 'Upload current data to Drive'}</p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-slate-400" />
+              </button>
+              <button 
+                onClick={onRestoreFromDrive}
+                className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-[0.85rem] bg-purple-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-purple-500">
+                    <CloudDownload size={20} />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-slate-900 font-medium text-sm">{t('restoreNow') || 'Restore Now'}</h4>
+                    <p className="text-slate-500 text-xs">{t('downloadFromDrive') || 'Download data from Drive'}</p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-slate-400" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Premium */}
       <button className="w-full bg-white rounded-lg p-4 mb-4 flex items-center justify-between border border-emerald-500/20 shadow-sm hover:bg-slate-50 transition-colors">
@@ -7929,9 +8014,147 @@ const GlobalSearchView = React.memo(({
 // --- Main App ---
 
 export default function App() {
+  const [session, setSession] = useState<any>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
+  useEffect(() => {
+    console.log('Supabase URL loaded:', import.meta.env.VITE_SUPABASE_URL ? 'Yes' : 'No');
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsAuthChecking(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const [onboardingComplete, setOnboardingComplete] = useState<boolean>(() => {
     return localStorage.getItem('onboarding_complete') === 'true';
   });
+
+  const [onboardingData, setOnboardingData] = useState<any>(null);
+  const [googleTokens, setGoogleTokens] = useState<any>(() => {
+    const saved = localStorage.getItem('google_tokens');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    if (session && onboardingComplete) {
+      // Sync ONLY profile info to Supabase
+      const savedData = localStorage.getItem('onboarding_data');
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        supabase.from('user_settings').upsert([
+          {
+            id: session.user.id,
+            name: data.name,
+            profile_image: data.profileImage,
+            updated_at: new Date().toISOString()
+          }
+        ]).then(({ error }) => {
+          if (!error) {
+            // We keep onboarding_data for local use but we don't sync the rest to Supabase
+            // localStorage.removeItem('onboarding_data'); 
+          } else {
+            console.error('Error syncing profile to Supabase:', error);
+          }
+        });
+      }
+    }
+  }, [session, onboardingComplete]);
+
+  // Google OAuth Listener
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
+        const tokens = event.data.tokens;
+        setGoogleTokens(tokens);
+        localStorage.setItem('google_tokens', JSON.stringify(tokens));
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handleConnectGoogle = async () => {
+    try {
+      const response = await fetch('/api/auth/google/url');
+      const { url } = await response.json();
+      window.open(url, 'google_auth', 'width=600,height=700');
+    } catch (error) {
+      console.error('Error getting Google auth URL:', error);
+    }
+  };
+
+  const handleBackupToDrive = async () => {
+    if (!googleTokens) return;
+    
+    const backupData = {
+      transactions,
+      managementData,
+      onboarding: JSON.parse(localStorage.getItem('onboarding_data') || '{}')
+    };
+
+    try {
+      const response = await fetch('/api/drive/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tokens: googleTokens,
+          data: backupData,
+          fileName: `finance_backup_${session?.user?.id || 'default'}.json`
+        })
+      });
+      const result = await response.json();
+      if (result.success) {
+        alert('Backup successful!');
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      console.error('Backup failed:', error);
+      alert('Backup failed: ' + error.message);
+    }
+  };
+
+  const handleRestoreFromDrive = async () => {
+    if (!googleTokens) return;
+
+    try {
+      const response = await fetch('/api/drive/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tokens: googleTokens,
+          fileName: `finance_backup_${session?.user?.id || 'default'}.json`
+        })
+      });
+      const result = await response.json();
+      if (result.data) {
+        const data = result.data;
+        if (data.transactions) setTransactions(data.transactions);
+        if (data.managementData) setManagementData(data.managementData);
+        if (data.onboarding) {
+          localStorage.setItem('onboarding_data', JSON.stringify(data.onboarding));
+          setProfileName(data.onboarding.name);
+          setProfileImage(data.onboarding.profileImage);
+          setLanguage(data.onboarding.language);
+          setCurrency(data.onboarding.currency);
+        }
+        alert('Restore successful!');
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      console.error('Restore failed:', error);
+      alert('Restore failed: ' + error.message);
+    }
+  };
 
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('appLanguage');
@@ -8410,7 +8633,8 @@ export default function App() {
     setManagementDetail({ label, isAdding: true });
   }, []);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem('onboarding_complete');
     localStorage.removeItem('appLanguage');
     localStorage.removeItem('appCurrency');
@@ -8420,6 +8644,14 @@ export default function App() {
     localStorage.removeItem('profileName');
     window.location.reload();
   }, []);
+
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   if (!onboardingComplete) {
     return (
@@ -8434,6 +8666,7 @@ export default function App() {
               }
               setCurrency(data.currency);
               localStorage.setItem('userOccupation', data.occupation);
+              localStorage.setItem('onboarding_data', JSON.stringify(data));
               
               // Update accounts
               setManagementData(prev => ({
@@ -8441,30 +8674,19 @@ export default function App() {
                 accounts: data.accounts
               }));
 
-              // Save to Supabase (non-blocking)
-              supabase.from('user_settings').insert([
-                {
-                  name: data.name,
-                  profile_image: data.profileImage,
-                  currency: data.currency,
-                  accounts: data.accounts,
-                  language: data.language,
-                  occupation: data.occupation,
-                  categories: {
-                    income: ['বেতন', 'ব্যবসা', 'উপহার', 'অন্যান্য'],
-                    expense: ['খাবার', 'শপিং', 'যাতায়াত', 'বিল', 'অন্যান্য']
-                  },
-                  created_at: new Date().toISOString()
-                }
-              ]).then(({ error }) => {
-                if (error) console.error('Error saving to Supabase:', error);
-              });
-
               localStorage.setItem('onboarding_complete', 'true');
               setOnboardingComplete(true);
             }} />
           </div>
         </div>
+      </LanguageContext.Provider>
+    );
+  }
+
+  if (!session) {
+    return (
+      <LanguageContext.Provider value={contextValue}>
+        <AuthView onSuccess={() => {}} />
       </LanguageContext.Provider>
     );
   }
@@ -8618,6 +8840,10 @@ export default function App() {
                       setOnboardingComplete(false);
                       setActiveTab('home');
                     }}
+                    onConnectGoogle={handleConnectGoogle}
+                    onBackupToDrive={handleBackupToDrive}
+                    onRestoreFromDrive={handleRestoreFromDrive}
+                    googleTokens={googleTokens}
                   />
                 ) : activeTab === 'editHome' ? (
                   <EditHomePageView 
