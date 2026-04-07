@@ -1,3 +1,14 @@
+export type Language = 'en' | 'bn';
+
+export type Currency = {
+  code: string;
+  symbol: string;
+  name: string;
+  country: string;
+  icon: string;
+  flagCode: string;
+};
+
 export interface Transaction {
   id: string;
   type: 'expense' | 'income' | 'dena' | 'paona' | 'repayment' | 'joma' | 'invest' | 'transfer';

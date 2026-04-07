@@ -85,7 +85,10 @@ import {
   ScrollText,
   Activity,
   FolderKanban,
-  CircleUserRound
+  CircleUserRound,
+  Tags,
+  LogOut,
+  Camera
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'motion/react';
 import { 
@@ -103,10 +106,19 @@ import {
   Tooltip as ReTooltip 
 } from 'recharts';
 import { cn } from './utils';
+import { OnboardingView } from './OnboardingView';
+import { supabase } from './supabaseClient';
+import { Currency, Language, Transaction } from './types';
+import { CURRENCIES } from './constants';
+
+// Force reset for new onboarding experience
+if (typeof window !== 'undefined' && localStorage.getItem('app_version') !== '3') {
+  localStorage.clear();
+  localStorage.setItem('app_version', '3');
+  window.location.reload();
+}
 
 // --- Translations ---
-type Language = 'en' | 'bn';
-
 const translations = {
   en: {
     // Bottom Nav
@@ -118,6 +130,16 @@ const translations = {
     today: 'Today',
     yesterday: 'Yesterday',
     unknownDate: 'Unknown Date',
+    // Profile
+    myProfile: 'My Profile',
+    statistics: 'Statistics',
+    accounts: 'Accounts',
+    categories: 'Categories',
+    subCategories: 'Sub-Categories',
+    memories: 'Memories',
+    onThisDay: 'On this day in previous years:',
+    noMemories: 'No memories for today',
+    checkBackLater: 'Check back on other days to see past activities.',
     // Settings
     personal: 'Personal',
     tapToViewProfile: 'Tap to view profile details',
@@ -258,7 +280,6 @@ const translations = {
     savedReminders: 'Saved Reminders',
     noDate: 'No Date',
     noSavedReminders: 'No saved reminders found.',
-    accounts: 'Accounts',
     freePlan: 'Free Plan',
     newWorkspace: 'New workspace',
     addAnAccount: 'Add an account',
@@ -310,8 +331,6 @@ const translations = {
     personalOrganization: 'Personal Organization',
     productivity: 'Productivity',
     // Management Items
-    categories: 'Categories',
-    subCategories: 'Sub Categories',
     contacts: 'Contacts',
     budgets: 'Budgets',
     financialGoals: 'Financial Goals',
@@ -415,7 +434,6 @@ const translations = {
     moneyYouOwe: 'Money you owe',
     moneyOwedToYou: 'Money owed to you',
     moneyYouReceived: 'Money you received',
-    myProfile: 'My Profile',
     assetsAndSavings: 'Assets & Savings',
     deposit: 'Deposit',
     investment: 'Investment',
@@ -479,6 +497,16 @@ const translations = {
     today: 'আজ',
     yesterday: 'গতকাল',
     unknownDate: 'অজানা তারিখ',
+    // Profile
+    myProfile: 'আমার প্রোফাইল',
+    statistics: 'পরিসংখ্যান',
+    accounts: 'অ্যাকাউন্ট',
+    categories: 'ক্যাটাগরি',
+    subCategories: 'সাব-ক্যাটাগরি',
+    memories: 'স্মৃতি',
+    onThisDay: 'আগের বছরগুলোর এই দিনে:',
+    noMemories: 'আজকের জন্য কোনো স্মৃতি নেই',
+    checkBackLater: 'অতীতের কার্যকলাপ দেখতে অন্য দিনে ফিরে আসুন।',
     // Settings
     personal: 'ব্যক্তিগত',
     tapToViewProfile: 'প্রোফাইল দেখতে ট্যাপ করুন',
@@ -619,7 +647,6 @@ const translations = {
     savedReminders: 'সংরক্ষিত রিমাইন্ডার',
     noDate: 'কোনো তারিখ নেই',
     noSavedReminders: 'কোনো সংরক্ষিত রিমাইন্ডার পাওয়া যায়নি।',
-    accounts: 'অ্যাকাউন্টস',
     freePlan: 'ফ্রি প্ল্যান',
     newWorkspace: 'নতুন ওয়ার্কস্পেস',
     addAnAccount: 'একটি অ্যাকাউন্ট যোগ করুন',
@@ -659,61 +686,6 @@ const translations = {
     // Analysis
     overview: 'সংক্ষিপ্তসার',
     incomeVsExpense: 'আয় বনাম ব্যয়',
-    // Management Sections
-    basicSetup: 'প্রাথমিক সেটআপ',
-    coreData: 'কোর ডেটা',
-    moneyManagement: 'মানি ম্যানেজমেন্ট',
-    planning: 'পরিকল্পনা',
-    assetsLiabilities: 'সম্পদ ও দায়',
-    wealth: 'সম্পদ',
-    transactionStatus: 'লেনদেনের অবস্থা',
-    tracking: 'ট্র্যাকিং',
-    personalOrganization: 'ব্যক্তিগত সংগঠন',
-    productivity: 'উৎপাদনশীলতা',
-    // Management Items
-    categories: 'ক্যাটাগরি',
-    subCategories: 'সাব ক্যাটাগরি',
-    contacts: 'পরিচিতি',
-    budgets: 'বাজেট',
-    financialGoals: 'আর্থিক লক্ষ্য',
-    investments: 'বিনিয়োগ',
-    fixedDeposits: 'ফিক্সড ডিপোজিট',
-    payables: 'পাওনা',
-    receivables: 'দেনা',
-    receipts: 'রসিদ',
-    tasks: 'টাস্ক',
-    reminders: 'রিমাইন্ডার',
-    // Add Transaction
-    addTransaction: 'লেনদেন যোগ করুন',
-    editTransaction: 'লেনদেন সম্পাদনা করুন',
-    amount: 'পরিমাণ',
-    type: 'ধরন',
-    subCategory: 'সাব ক্যাটাগরি',
-    account: 'অ্যাকাউন্ট',
-    note: 'নোট',
-    moreOptions: 'আরও বিকল্প',
-    status: 'স্ট্যাটাস',
-    save: 'সংরক্ষণ করুন',
-    update: 'আপডেট করুন',
-    transfer: 'স্থানান্তর',
-    selectAccount: 'অ্যাকাউন্ট নির্বাচন করুন',
-    selectCategory: 'ক্যাটাগরি নির্বাচন করুন',
-    selectPerson: 'ব্যক্তি নির্বাচন করুন',
-    selectReminder: 'রিমাইন্ডার নির্বাচন করুন',
-    quickAmount: 'কুইক অ্যামাউন্ট',
-    calculator: 'ক্যালকুলেটর',
-    tags: 'ট্যাগ',
-    repeat: 'পুনরাবৃত্তি',
-    daily: 'দৈনিক',
-    weekly: 'সাপ্তাহিক',
-    monthly: 'মাসিক',
-    yearly: 'বার্ষিক',
-    // Categories
-    foodDrinks: 'খাবার ও পানীয়',
-    shopping: 'কেনাকাটা',
-    transport: 'পরিবহন',
-    utilities: 'ইউটিলিটি',
-    others: 'অন্যান্য',
     salary: 'বেতন',
     business: 'ব্যবসা',
     gift: 'উপহার',
@@ -776,7 +748,6 @@ const translations = {
     moneyYouOwe: 'আপনার কাছে যে টাকা পাওনা',
     moneyOwedToYou: 'আপনি যে টাকা পাবেন',
     moneyYouReceived: 'আপনি যে টাকা পেয়েছেন',
-    myProfile: 'আমার প্রোফাইল',
     assetsAndSavings: 'সম্পদ ও সঞ্চয়',
     deposit: 'ডিপোজিট',
     investment: 'বিনিয়োগ',
@@ -832,66 +803,6 @@ const translations = {
   }
 };
 
-export type Currency = {
-  code: string;
-  symbol: string;
-  name: string;
-  country: string;
-  icon: string;
-  flagCode: string;
-};
-
-export const CURRENCIES: Currency[] = [
-  { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka', country: 'Bangladesh', icon: '🇧🇩', flagCode: 'bd' },
-  { code: 'USD', symbol: '$', name: 'US Dollar', country: 'United States', icon: '🇺🇸', flagCode: 'us' },
-  { code: 'EUR', symbol: '€', name: 'Euro', country: 'European Union', icon: '🇪🇺', flagCode: 'eu' },
-  { code: 'GBP', symbol: '£', name: 'British Pound', country: 'United Kingdom', icon: '🇬🇧', flagCode: 'gb' },
-  { code: 'INR', symbol: '₹', name: 'Indian Rupee', country: 'India', icon: '🇮🇳', flagCode: 'in' },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', country: 'Australia', icon: '🇦🇺', flagCode: 'au' },
-  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar', country: 'Canada', icon: '🇨🇦', flagCode: 'ca' },
-  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', country: 'Singapore', icon: '🇸🇬', flagCode: 'sg' },
-  { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham', country: 'United Arab Emirates', icon: '🇦🇪', flagCode: 'ae' },
-  { code: 'SAR', symbol: '﷼', name: 'Saudi Riyal', country: 'Saudi Arabia', icon: '🇸🇦', flagCode: 'sa' },
-  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', country: 'Malaysia', icon: '🇲🇾', flagCode: 'my' },
-  { code: 'JPY', symbol: '¥', name: 'Japanese Yen', country: 'Japan', icon: '🇯🇵', flagCode: 'jp' },
-  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan', country: 'China', icon: '🇨🇳', flagCode: 'cn' },
-  { code: 'PKR', symbol: '₨', name: 'Pakistani Rupee', country: 'Pakistan', icon: '🇵🇰', flagCode: 'pk' },
-  { code: 'LKR', symbol: 'Rs', name: 'Sri Lankan Rupee', country: 'Sri Lanka', icon: '🇱🇰', flagCode: 'lk' },
-  { code: 'NPR', symbol: 'रु', name: 'Nepalese Rupee', country: 'Nepal', icon: '🇳🇵', flagCode: 'np' },
-  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real', country: 'Brazil', icon: '🇧🇷', flagCode: 'br' },
-  { code: 'RUB', symbol: '₽', name: 'Russian Ruble', country: 'Russia', icon: '🇷🇺', flagCode: 'ru' },
-  { code: 'ZAR', symbol: 'R', name: 'South African Rand', country: 'South Africa', icon: '🇿🇦', flagCode: 'za' },
-  { code: 'TRY', symbol: '₺', name: 'Turkish Lira', country: 'Turkey', icon: '🇹🇷', flagCode: 'tr' },
-  { code: 'KRW', symbol: '₩', name: 'South Korean Won', country: 'South Korea', icon: '🇰🇷', flagCode: 'kr' },
-  { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah', country: 'Indonesia', icon: '🇮🇩', flagCode: 'id' },
-  { code: 'THB', symbol: '฿', name: 'Thai Baht', country: 'Thailand', icon: '🇹🇭', flagCode: 'th' },
-  { code: 'VND', symbol: '₫', name: 'Vietnamese Dong', country: 'Vietnam', icon: '🇻🇳', flagCode: 'vn' },
-  { code: 'PHP', symbol: '₱', name: 'Philippine Peso', country: 'Philippines', icon: '🇵🇭', flagCode: 'ph' },
-  { code: 'EGP', symbol: 'E£', name: 'Egyptian Pound', country: 'Egypt', icon: '🇪🇬', flagCode: 'eg' },
-  { code: 'NGN', symbol: '₦', name: 'Nigerian Naira', country: 'Nigeria', icon: '🇳🇬', flagCode: 'ng' },
-  { code: 'KES', symbol: 'KSh', name: 'Kenyan Shilling', country: 'Kenya', icon: '🇰🇪', flagCode: 'ke' },
-  { code: 'GHS', symbol: 'GH₵', name: 'Ghanaian Cedi', country: 'Ghana', icon: '🇬🇭', flagCode: 'gh' },
-  { code: 'MXN', symbol: '$', name: 'Mexican Peso', country: 'Mexico', icon: '🇲🇽', flagCode: 'mx' },
-  { code: 'ARS', symbol: '$', name: 'Argentine Peso', country: 'Argentina', icon: '🇦🇷', flagCode: 'ar' },
-  { code: 'COP', symbol: '$', name: 'Colombian Peso', country: 'Colombia', icon: '🇨🇴', flagCode: 'co' },
-  { code: 'CLP', symbol: '$', name: 'Chilean Peso', country: 'Chile', icon: '🇨🇱', flagCode: 'cl' },
-  { code: 'PEN', symbol: 'S/', name: 'Peruvian Sol', country: 'Peru', icon: '🇵🇪', flagCode: 'pe' },
-  { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc', country: 'Switzerland', icon: '🇨🇭', flagCode: 'ch' },
-  { code: 'SEK', symbol: 'kr', name: 'Swedish Krona', country: 'Sweden', icon: '🇸🇪', flagCode: 'se' },
-  { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone', country: 'Norway', icon: '🇳🇴', flagCode: 'no' },
-  { code: 'DKK', symbol: 'kr', name: 'Danish Krone', country: 'Denmark', icon: '🇩🇰', flagCode: 'dk' },
-  { code: 'PLN', symbol: 'zł', name: 'Polish Zloty', country: 'Poland', icon: '🇵🇱', flagCode: 'pl' },
-  { code: 'CZK', symbol: 'Kč', name: 'Czech Koruna', country: 'Czech Republic', icon: '🇨🇿', flagCode: 'cz' },
-  { code: 'HUF', symbol: 'Ft', name: 'Hungarian Forint', country: 'Hungary', icon: '🇭🇺', flagCode: 'hu' },
-  { code: 'RON', symbol: 'lei', name: 'Romanian Leu', country: 'Romania', icon: '🇷🇴', flagCode: 'ro' },
-  { code: 'BGN', symbol: 'лв', name: 'Bulgarian Lev', country: 'Bulgaria', icon: '🇧🇬', flagCode: 'bg' },
-  { code: 'HRK', symbol: 'kn', name: 'Croatian Kuna', country: 'Croatia', icon: '🇭🇷', flagCode: 'hr' },
-  { code: 'RSD', symbol: 'дин', name: 'Serbian Dinar', country: 'Serbia', icon: '🇷🇸', flagCode: 'rs' },
-  { code: 'BAM', symbol: 'KM', name: 'Bosnia-Herzegovina Convertible Mark', country: 'Bosnia and Herzegovina', icon: '🇧🇦', flagCode: 'ba' },
-  { code: 'ALL', symbol: 'L', name: 'Albanian Lek', country: 'Albania', icon: '🇦🇱', flagCode: 'al' },
-  { code: 'MKD', symbol: 'ден', name: 'Macedonian Denar', country: 'North Macedonia', icon: '🇲🇰', flagCode: 'mk' },
-  { code: 'ISK', symbol: 'kr', name: 'Icelandic Króna', country: 'Iceland', icon: '🇮🇸', flagCode: 'is' },
-];
 
 const LanguageContext = createContext<{
   language: Language;
@@ -900,6 +811,12 @@ const LanguageContext = createContext<{
   setCurrency: (currency: Currency) => void;
   t: (key: keyof typeof translations['en']) => string;
   formatAmount: (amount: number) => string;
+  profileName: string;
+  setProfileName: (name: string) => void;
+  profileEmail: string;
+  setProfileEmail: (email: string) => void;
+  profileImage: string;
+  setProfileImage: (image: string) => void;
 }>({
   language: 'en',
   setLanguage: () => {},
@@ -907,6 +824,12 @@ const LanguageContext = createContext<{
   setCurrency: () => {},
   t: (key) => translations['en'][key],
   formatAmount: (amount) => amount.toLocaleString(),
+  profileName: 'Guest',
+  setProfileName: () => {},
+  profileEmail: '',
+  setProfileEmail: () => {},
+  profileImage: '',
+  setProfileImage: () => {},
 });
 
 export const useLanguage = () => useContext(LanguageContext);
@@ -920,136 +843,7 @@ const SUMMARY_DATA = [
   { label: 'Savings', value: 0, icon: PiggyBank, color: 'bg-cyan-500' },
 ];
 
-const TRANSACTIONS = [
-  {
-    id: 'tx-1',
-    category: 'Food',
-    subCategory: 'Dinner',
-    type: 'expense',
-    amount: 450,
-    date: new Date().toLocaleDateString('en-CA'),
-    time: '08:30 PM',
-    notes: 'Dinner with friends at Italian place',
-    location: 'Little Italy, NY',
-    reminder: true,
-    icon: 'Utensils',
-    account: 'Cash',
-    accountIcon: 'Wallet',
-    accountColor: '#10b981',
-    status: 'Normal'
-  },
-  {
-    id: 'tx-2',
-    category: 'Salary',
-    subCategory: 'Monthly Pay',
-    type: 'income',
-    amount: 25000,
-    date: new Date().toLocaleDateString('en-CA'),
-    time: '10:00 AM',
-    notes: 'Monthly salary credit',
-    location: 'Remote',
-    reminder: false,
-    icon: 'Banknote',
-    account: 'Bank Account',
-    accountIcon: 'Database',
-    accountColor: '#3b82f6',
-    status: 'Normal'
-  },
-  {
-    id: 'tx-3',
-    category: 'Shopping',
-    subCategory: 'Electronics',
-    type: 'expense',
-    amount: 1200,
-    date: new Date(Date.now() - 86400000).toLocaleDateString('en-CA'),
-    time: '03:15 PM',
-    notes: 'New monitor for setup',
-    location: 'Best Buy',
-    reminder: false,
-    icon: 'ShoppingBag',
-    account: 'Nagad',
-    accountIcon: 'Smartphone',
-    accountColor: '#ef4444',
-    status: 'Normal'
-  },
-  {
-    id: 'tx-4',
-    txName: 'Borrowed from Rahim',
-    category: 'Debt',
-    type: 'dena',
-    amount: 5000,
-    date: new Date(Date.now() - 172800000).toLocaleDateString('en-CA'),
-    time: '11:00 AM',
-    notes: 'For emergency medical expense',
-    person: 'Rahim',
-    account: 'Cash',
-    accountIcon: 'Wallet',
-    accountColor: '#10b981',
-    addToIncome: true,
-    status: 'Pending'
-  },
-  {
-    id: 'tx-5',
-    txName: 'Lent to Karim',
-    category: 'Loan',
-    type: 'paona',
-    amount: 2000,
-    date: new Date(Date.now() - 259200000).toLocaleDateString('en-CA'),
-    time: '02:00 PM',
-    notes: 'Personal loan',
-    person: 'Karim',
-    account: 'Bank Account',
-    accountIcon: 'Database',
-    accountColor: '#3b82f6',
-    addToExpense: true,
-    status: 'Normal'
-  },
-  {
-    id: 'tx-6',
-    txName: 'Savings for Hajj',
-    category: 'Savings',
-    type: 'joma',
-    amount: 10000,
-    date: new Date(Date.now() - 345600000).toLocaleDateString('en-CA'),
-    time: '09:00 AM',
-    notes: 'Monthly savings',
-    account: 'Bank Account',
-    accountIcon: 'Database',
-    accountColor: '#3b82f6',
-    status: 'Recurring'
-  },
-  {
-    id: 'tx-7',
-    txName: 'Stock Investment',
-    category: 'Investment',
-    type: 'invest',
-    amount: 15000,
-    date: new Date(Date.now() - 432000000).toLocaleDateString('en-CA'),
-    time: '10:30 AM',
-    notes: 'Bought AAPL stocks',
-    account: 'Bank Account',
-    accountIcon: 'Database',
-    accountColor: '#3b82f6',
-    status: 'Normal'
-  },
-  {
-    id: 'tx-8',
-    txName: 'Transfer to Nagad',
-    category: 'Transfer',
-    type: 'transfer',
-    amount: 3000,
-    date: new Date(Date.now() - 518400000).toLocaleDateString('en-CA'),
-    time: '04:00 PM',
-    notes: 'For mobile recharge and bills',
-    account: 'Bank Account',
-    accountIcon: 'Database',
-    accountColor: '#3b82f6',
-    toAccount: 'Nagad',
-    toAccountIcon: 'Smartphone',
-    toAccountColor: '#ef4444',
-    status: 'Normal'
-  }
-];
+const TRANSACTIONS = [];
 
 const ANALYSIS_PIE_DATA = [
   { name: 'foodDrinks', value: 0 },
@@ -1061,39 +855,10 @@ const ANALYSIS_PIE_DATA = [
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-const WORKSPACES = [
-  { id: 'ws-1', title: 'Tour', members: 4 },
-  { id: 'ws-2', title: 'Special Events', members: 8 },
-];
+const WORKSPACES = [];
 
-const SHARED_EXPENSES = [
-  {
-    id: 's1',
-    paidBy: 'Abid',
-    avatar: 'https://picsum.photos/seed/abid/100/100',
-    amount: 0,
-    description: 'Dinner (Shared)',
-    date: '14 Mar 2026',
-    owes: [
-      { name: 'You', amount: 0 },
-      { name: 'Sarah', amount: 0 },
-      { name: 'John', amount: 0 },
-    ]
-  },
-  {
-    id: 's2',
-    paidBy: 'You',
-    avatar: 'https://picsum.photos/seed/me/100/100',
-    amount: 0,
-    description: 'Hotel Booking',
-    date: '13 Mar 2026',
-    owes: [
-      { name: 'Abid', amount: 0 },
-      { name: 'Sarah', amount: 0 },
-      { name: 'John', amount: 0 },
-    ]
-  }
-];
+const SHARED_EXPENSES = [];
+
 
 // --- Components ---
 
@@ -1188,8 +953,8 @@ const BottomBar = React.memo(({ activeTab, setActiveTab, onAddClick }: { activeT
   );
 });
 
-const ProfileBottomSheet = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
-  const { t } = useLanguage();
+const ProfileBottomSheet = ({ isOpen, onClose, onLogout }: { isOpen: boolean, onClose: () => void, onLogout: () => void }) => {
+  const { t, profileName, profileEmail, profileImage } = useLanguage();
   if (!isOpen) return null;
 
   return createPortal(
@@ -1210,7 +975,7 @@ const ProfileBottomSheet = ({ isOpen, onClose }: { isOpen: boolean, onClose: () 
         
         {/* Email & More */}
         <div className="flex items-center justify-between mb-4 px-2">
-          <span className="text-slate-500 text-sm font-medium">zomirlimon@gmail.com</span>
+          <span className="text-slate-500 text-sm font-medium">{profileEmail}</span>
           <button className="text-slate-400 hover:text-slate-600 transition-colors">
             <MoreHorizontal size={18} />
           </button>
@@ -1220,9 +985,15 @@ const ProfileBottomSheet = ({ isOpen, onClose }: { isOpen: boolean, onClose: () 
         <div className="space-y-1 mb-4">
           <button className="w-full flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors">
             <div className="flex items-center gap-3">
-              <img src="https://i.pravatar.cc/150?u=zamir" alt="Zamir" className="w-10 h-10 rounded-lg object-cover" />
+              {profileImage ? (
+                <img src={profileImage} alt={profileName} className="w-10 h-10 rounded-lg object-cover" />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 font-medium">
+                  {profileName.charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="text-left">
-                <p className="font-medium text-sm text-slate-900">Zamir</p>
+                <p className="font-medium text-sm text-slate-900">{profileName}</p>
                 <p className="text-slate-500 text-xs">{t('freePlan')}</p>
               </div>
             </div>
@@ -1231,10 +1002,10 @@ const ProfileBottomSheet = ({ isOpen, onClose }: { isOpen: boolean, onClose: () 
           
           <button className="w-full flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg transition-colors">
             <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-lg font-medium text-slate-700">
-              Z
+              {profileName.charAt(0).toUpperCase()}
             </div>
             <div className="text-left">
-              <p className="font-medium text-sm text-slate-900">Zamir's Space</p>
+              <p className="font-medium text-sm text-slate-900">{profileName}'s Space</p>
               <p className="text-slate-500 text-xs">{t('freePlan')}</p>
             </div>
           </button>
@@ -1261,7 +1032,10 @@ const ProfileBottomSheet = ({ isOpen, onClose }: { isOpen: boolean, onClose: () 
             <ChevronRight size={18} className="text-slate-400" />
           </button>
           
-          <button className="w-full flex items-center gap-3 p-2 hover:bg-rose-50 rounded-lg transition-colors text-rose-600">
+          <button 
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 p-2 hover:bg-rose-50 rounded-lg transition-colors text-rose-600"
+          >
             <div className="w-8 h-8 rounded-full border border-rose-200 flex items-center justify-center bg-white">
               <X size={16} />
             </div>
@@ -1285,7 +1059,8 @@ const UnifiedTopBar = React.memo(({
   onSearchFocus,
   onFilter,
   onNotifications,
-  onPdfExport
+  onPdfExport,
+  onLogout
 }: { 
   title?: string, 
   showPdf?: boolean, 
@@ -1297,9 +1072,10 @@ const UnifiedTopBar = React.memo(({
   onSearchFocus?: () => void,
   onFilter?: () => void,
   onNotifications?: () => void,
-  onPdfExport?: () => void
+  onPdfExport?: () => void,
+  onLogout?: () => void
 }) => {
-  const { t, language, currency, formatAmount } = useLanguage();
+  const { t, language, currency, formatAmount, profileName, profileImage } = useLanguage();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   const today = new Date().toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-GB', { 
@@ -1318,10 +1094,16 @@ const UnifiedTopBar = React.memo(({
                 onClick={() => setIsProfileOpen(true)}
                 className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left"
               >
-                <img src="https://i.pravatar.cc/150?u=zamir" alt="Profile" className="w-10 h-10 rounded-lg object-cover" />
+                {profileImage ? (
+                  <img src={profileImage} alt={profileName} className="w-10 h-10 rounded-lg object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 font-medium">
+                    {profileName.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <div className="flex items-center gap-1">
-            <span className="text-slate-900 font-medium text-base leading-none tracking-tighter text-clip-fix">Zamir</span>
+            <span className="text-slate-900 font-medium text-base leading-none tracking-tighter text-clip-fix">{profileName}</span>
                     <ChevronDown size={14} className="text-slate-500" />
                   </div>
                   <p className="text-slate-400 text-xs font-medium mt-1">{today}</p>
@@ -1396,7 +1178,11 @@ const UnifiedTopBar = React.memo(({
 
       <AnimatePresence>
         {isProfileOpen && (
-          <ProfileBottomSheet isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+          <ProfileBottomSheet 
+            isOpen={isProfileOpen} 
+            onClose={() => setIsProfileOpen(false)} 
+            onLogout={onLogout || (() => {})} 
+          />
         )}
       </AnimatePresence>
     </>
@@ -1886,40 +1672,12 @@ const NotificationsView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </button>
         <h2 className="text-xl font-medium text-slate-900">{t('notifications')}</h2>
       </div>
-      <motion.div 
-        initial="hidden"
-        animate="visible"
-        variants={{
-          hidden: { opacity: 0 },
-          visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.05, delayChildren: 0.05 }
-          }
-        }}
-        className="p-4 space-y-3"
-      >
-        <motion.div variants={{ hidden: { opacity: 0, y: 20, filter: "blur(8px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)" } }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} className="bg-white p-4 rounded-lg border border-slate-100 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm text-indigo-600 flex items-center justify-center shrink-0"><Gift size={20} /></div>
-          <div>
-            <p className="text-sm font-medium text-slate-900">{t('offerTitle')}</p>
-            <p className="text-xs text-slate-500 mt-1">{t('offerDesc')}</p>
-          </div>
-        </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0, y: 20, filter: "blur(8px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)" } }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} className="bg-white p-4 rounded-lg border border-slate-100 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-amber-500/10 backdrop-blur-xl border border-white shadow-sm text-amber-600 flex items-center justify-center shrink-0"><Repeat size={20} /></div>
-          <div>
-            <p className="text-sm font-medium text-slate-900">{t('recurringTitle')}</p>
-            <p className="text-xs text-slate-500 mt-1">{t('recurringDesc')}</p>
-          </div>
-        </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0, y: 20, filter: "blur(8px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)" } }} transition={{ type: "spring", bounce: 0, duration: 0.3 }} className="bg-white p-4 rounded-lg border border-slate-100 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm text-emerald-600 flex items-center justify-center shrink-0"><Clock size={20} /></div>
-          <div>
-            <p className="text-sm font-medium text-slate-900">{t('taskTitle')}</p>
-            <p className="text-xs text-slate-500 mt-1">{t('taskDesc')}</p>
-          </div>
-        </motion.div>
-      </motion.div>
+      <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 mb-4">
+          <Bell size={40} />
+        </div>
+        <p className="text-slate-500 font-medium">কোনো নতুন বিজ্ঞপ্তি নেই</p>
+      </div>
     </motion.div>
   );
 };
@@ -4772,158 +4530,206 @@ const ManagementDetailView = React.memo(({
   );
 });
 
-const ProfileView = React.memo(({ transactions, onClose }: { transactions: any[], onClose: () => void }) => {
-  const { t, currency, language, formatAmount } = useLanguage();
-  const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-  const balance = income - expense;
+const ProfileView = React.memo(({ transactions, managementData, onClose }: { transactions: any[], managementData: any, onClose: () => void }) => {
+  const { t, currency, language, formatAmount, profileName, setProfileName, profileImage, setProfileImage } = useLanguage();
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState(profileName);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const getSum = (keywords: string[]) => {
-    return transactions
-      .filter(t => keywords.some(k => t.category?.toLowerCase().includes(k.toLowerCase()) || t.subCategory?.toLowerCase().includes(k.toLowerCase())))
-      .reduce((sum, t) => sum + t.amount, 0);
+  const handleSaveName = () => {
+    if (tempName.trim()) {
+      setProfileName(tempName.trim());
+    } else {
+      setTempName(profileName);
+    }
+    setIsEditingName(false);
   };
 
-  const given = getSum(['given', 'lent', 'Given']);
-  const received = getSum(['received', 'borrowed', 'Received']);
-  const deposit = getSum(['deposit', 'savings', 'Savings']);
-  const debt = getSum(['debt', 'Debt']);
-  const loan = getSum(['loan', 'Loan']);
-  const investment = getSum(['investment', 'invest', 'Investment']);
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const totalAccounts = managementData?.accounts?.length || 0;
+  const totalCategories = Object.values(managementData?.categories || {}).flat().length;
+  const totalSubCategories = managementData?.subCategories?.length || 0;
+  const totalTransactions = transactions.length;
+
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentDate = today.getDate();
+  const currentYear = today.getFullYear();
+
+  const memories = transactions.filter(t => {
+    const tDate = new Date(t.date);
+    return tDate.getMonth() === currentMonth && 
+           tDate.getDate() === currentDate && 
+           tDate.getFullYear() < currentYear;
+  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="fixed inset-0 z-[100] bg-[#121418] text-white overflow-y-auto pb-32"
+      initial={{ x: '-100%' }}
+      animate={{ x: 0 }}
+      exit={{ x: '-100%' }}
+      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+      className="fixed inset-0 z-[100] bg-slate-50 text-slate-900 overflow-y-auto pb-32"
     >
-      <div className="px-6 pt-3 pb-6 bg-[#121418] flex items-center gap-4">
-        <button onClick={onClose} className="p-2 -ml-2 text-slate-400 hover:text-white transition-colors rounded-lg">
+      <div className="px-6 py-4 bg-white border-b border-slate-100 flex items-center gap-4 sticky top-0 z-10 shadow-sm">
+        <button onClick={onClose} className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors rounded-lg">
           <ArrowLeft size={24} />
         </button>
-        <h1 className="text-2xl font-medium">{t('myProfile')}</h1>
+        <h1 className="text-xl font-medium">{t('myProfile') || 'My Profile'}</h1>
       </div>
 
-      <div className="px-6 space-y-8">
-        {/* Cards & Wallets */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium">{t('overview')}</h2>
-            <button className="text-xs text-slate-400 border border-slate-700 rounded-full px-3 py-1">{t('viewAll')}</button>
+      <div className="px-6 py-8 space-y-8">
+        {/* Profile Header */}
+        <div className="flex flex-col items-center justify-center space-y-4 bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full overflow-hidden shadow-inner border-2 border-emerald-100 flex items-center justify-center bg-emerald-50">
+              {profileImage ? (
+                <img src={profileImage} alt={profileName} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-4xl font-medium text-emerald-600">{profileName.charAt(0).toUpperCase()}</span>
+              )}
+            </div>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute bottom-0 right-0 w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-md border-2 border-white hover:bg-emerald-600 transition-colors"
+            >
+              <Camera size={14} />
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImageUpload} 
+              accept="image/*" 
+              className="hidden" 
+            />
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scrollbar -mx-6 px-6">
-            <div className="min-w-[160px] bg-emerald-500 rounded-lg p-5 snap-start relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" />
-              <Wallet className="text-white/80 mb-8 relative z-10" size={24} />
-              <p className="text-white/90 text-sm font-medium mb-1 relative z-10">{t('balance')}</p>
-              <h3 className="text-2xl font-medium relative z-10">{formatAmount(balance)}</h3>
+          
+          {isEditingName ? (
+            <div className="flex items-center gap-2 w-full max-w-xs">
+              <input 
+                type="text" 
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2 text-center font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+              />
+              <button onClick={handleSaveName} className="p-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors">
+                <Check size={20} />
+              </button>
             </div>
-            <div className="min-w-[160px] bg-blue-500 rounded-lg p-5 snap-start relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" />
-              <ArrowDownLeft className="text-white/80 mb-8 relative z-10" size={24} />
-              <p className="text-white/90 text-sm font-medium mb-1 relative z-10">{t('income')}</p>
-              <h3 className="text-2xl font-medium relative z-10">{formatAmount(income)}</h3>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-slate-900">{profileName}</h2>
+              <button onClick={() => setIsEditingName(true)} className="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors rounded-lg hover:bg-emerald-50">
+                <Edit2 size={16} />
+              </button>
             </div>
-            <div className="min-w-[160px] bg-rose-500 rounded-lg p-5 snap-start relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" />
-              <ArrowUpRight className="text-white/80 mb-8 relative z-10" size={24} />
-              <p className="text-white/90 text-sm font-medium mb-1 relative z-10">{t('expense')}</p>
-              <h3 className="text-2xl font-medium relative z-10">{formatAmount(expense)}</h3>
+          )}
+        </div>
+
+        {/* Stats Grid */}
+        <section>
+          <h3 className="text-lg font-medium mb-4 text-slate-800">{t('statistics') || 'Statistics'}</h3>
+          <div className="grid grid-cols-2 gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden">
+            <div className="bg-slate-100 p-4 flex flex-col items-center justify-center text-center gap-2">
+              <div className="w-10 h-10 bg-blue-500/10 backdrop-blur-xl border border-white shadow-sm text-blue-600 rounded-md flex items-center justify-center">
+                <Wallet size={20} />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-900 leading-tight tracking-tighter">{totalAccounts}</p>
+                <p className="text-xs font-medium text-slate-500 leading-tight text-clip-fix">{t('accounts') || 'Accounts'}</p>
+              </div>
+            </div>
+            <div className="bg-slate-100 p-4 flex flex-col items-center justify-center text-center gap-2">
+              <div className="w-10 h-10 bg-purple-500/10 backdrop-blur-xl border border-white shadow-sm text-purple-600 rounded-md flex items-center justify-center">
+                <Tag size={20} />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-900 leading-tight tracking-tighter">{totalCategories}</p>
+                <p className="text-xs font-medium text-slate-500 leading-tight text-clip-fix">{t('categories') || 'Categories'}</p>
+              </div>
+            </div>
+            <div className="bg-slate-100 p-4 flex flex-col items-center justify-center text-center gap-2">
+              <div className="w-10 h-10 bg-amber-500/10 backdrop-blur-xl border border-white shadow-sm text-amber-600 rounded-md flex items-center justify-center">
+                <Layers size={20} />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-900 leading-tight tracking-tighter">{totalSubCategories}</p>
+                <p className="text-xs font-medium text-slate-500 leading-tight text-clip-fix">{t('subCategories') || 'Sub-Categories'}</p>
+              </div>
+            </div>
+            <div className="bg-slate-100 p-4 flex flex-col items-center justify-center text-center gap-2">
+              <div className="w-10 h-10 bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm text-emerald-600 rounded-md flex items-center justify-center">
+                <Activity size={20} />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-900 leading-tight tracking-tighter">{totalTransactions}</p>
+                <p className="text-xs font-medium text-slate-500 leading-tight text-clip-fix">{t('transactions') || 'Transactions'}</p>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Investments & Savings */}
+        {/* Memories */}
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium">{t('assetsAndSavings')}</h2>
-            <button className="text-xs text-slate-400 border border-slate-700 rounded-full px-3 py-1">{t('viewAll')}</button>
+          <div className="flex items-center gap-2 mb-4">
+            <History className="text-indigo-500" size={20} />
+            <h3 className="text-lg font-medium text-slate-800">{t('memories') || 'Memories'}</h3>
           </div>
-          <div className="bg-[#1C1F26] rounded-lg p-2">
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                  <PiggyBank size={24} />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm">{t('deposit')}</h4>
-                  <p className="text-slate-400 text-xs">{t('totalSavings')}</p>
-                </div>
+          
+          {memories.length > 0 ? (
+            <div className="space-y-4">
+              <p className="text-sm text-slate-500 font-medium">
+                {t('onThisDay') || 'On this day in previous years:'}
+              </p>
+              <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden divide-y divide-slate-100">
+                {memories.map((tx, idx) => (
+                  <div key={idx} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-10 h-10 rounded-md flex items-center justify-center shrink-0 backdrop-blur-xl border border-white shadow-sm",
+                        tx.type === 'income' ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600"
+                      )}>
+                        {tx.type === 'income' ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-900">{tx.category}</p>
+                        <p className="text-xs text-slate-500">{new Date(tx.date).getFullYear()}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={cn(
+                        "font-medium",
+                        tx.type === 'income' ? "text-emerald-600" : "text-rose-600"
+                      )}>
+                        {formatAmount(tx.amount)}
+                      </p>
+                      {tx.note && <p className="text-xs text-slate-400 truncate max-w-[100px]">{tx.note}</p>}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <span className="font-medium text-indigo-400 text-sm">{formatAmount(deposit)}</span>
             </div>
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400">
-                  <Briefcase size={24} />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm">{t('investment')}</h4>
-                  <p className="text-slate-400 text-xs">{t('totalInvested')}</p>
-                </div>
+          ) : (
+            <div className="bg-indigo-50/50 rounded-2xl p-6 text-center border border-indigo-100 border-dashed">
+              <div className="w-12 h-12 bg-indigo-100 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Calendar size={24} />
               </div>
-              <span className="font-medium text-purple-400 text-sm">{formatAmount(investment)}</span>
+              <p className="text-indigo-900 font-medium">{t('noMemories') || 'No memories for today'}</p>
+              <p className="text-sm text-indigo-400 mt-1">{t('checkBackLater') || 'Check back on other days to see past activities.'}</p>
             </div>
-          </div>
-        </section>
-
-        {/* Debts & Loans */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium">{t('debtsAndLoans')}</h2>
-            <button className="text-xs text-slate-400 border border-slate-700 rounded-full px-3 py-1">{t('viewAll')}</button>
-          </div>
-          <div className="bg-[#1C1F26] rounded-lg p-2">
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400">
-                  <ArrowUpRight size={24} />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm">{t('given')}</h4>
-                  <p className="text-slate-400 text-xs">{t('moneyYouGave')}</p>
-                </div>
-              </div>
-              <span className="font-medium text-amber-400 text-sm">{formatAmount(given)}</span>
-            </div>
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <ArrowDownLeft size={24} />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm">{t('received')}</h4>
-                  <p className="text-slate-400 text-xs">{t('moneyYouReceived')}</p>
-                </div>
-              </div>
-              <span className="font-medium text-emerald-400 text-sm">{formatAmount(received)}</span>
-            </div>
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-rose-500/20 flex items-center justify-center text-rose-400">
-                  <CreditCard size={24} />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm">{t('debt')}</h4>
-                  <p className="text-slate-400 text-xs">{t('moneyYouOwe')}</p>
-                </div>
-              </div>
-              <span className="font-medium text-rose-400 text-sm">{formatAmount(debt)}</span>
-            </div>
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
-                  <Banknote size={24} />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm">{t('loan')}</h4>
-                  <p className="text-slate-400 text-xs">{t('moneyOwedToYou')}</p>
-                </div>
-              </div>
-              <span className="font-medium text-blue-400 text-sm">{formatAmount(loan)}</span>
-            </div>
-          </div>
+          )}
         </section>
       </div>
     </motion.div>
@@ -5416,7 +5222,8 @@ const SettingsView = React.memo(({
   floatingBubbleEnabled,
   setFloatingBubbleEnabled,
   onOpenWidgetSettings,
-  onOpenFloatingBubbleSettings
+  onOpenFloatingBubbleSettings,
+  onLogout
 }: { 
   onOpenWorkspace: (id: string) => void, 
   onOpenDetail: (label: string) => void,
@@ -5435,29 +5242,51 @@ const SettingsView = React.memo(({
   floatingBubbleEnabled: boolean,
   setFloatingBubbleEnabled: (value: boolean) => void,
   onOpenWidgetSettings: () => void,
-  onOpenFloatingBubbleSettings: () => void
+  onOpenFloatingBubbleSettings: () => void,
+  onLogout: () => void
 }) => {
   const [privacyMode, setPrivacyMode] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
   const [biometricLock, setBiometricLock] = useState(true);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
-  const { language, setLanguage, currency, t } = useLanguage();
+  const { language, setLanguage, currency, t, profileName, profileEmail, profileImage } = useLanguage();
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pb-32 bg-white min-h-screen">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pb-32 bg-slate-50 min-h-screen">
       <div className="px-6 pt-6">
         <h2 className="text-slate-900 font-medium text-2xl mb-6">{t('settings')}</h2>
       
+      {/* Profile */}
+      <button 
+        onClick={onOpenProfile}
+        className="w-full bg-white rounded-lg p-4 mb-4 flex items-center justify-between border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors"
+      >
+        <div className="flex items-center gap-4">
+          {profileImage ? (
+            <img src={profileImage} alt={profileName} className="w-12 h-12 rounded-full object-cover border border-slate-200" />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-medium border border-slate-200">
+              {profileName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="text-left">
+            <h3 className="font-medium text-slate-900 text-base">{profileName}</h3>
+            <p className="text-slate-500 text-xs">{profileEmail}</p>
+          </div>
+        </div>
+        <ChevronRight size={20} className="text-slate-400" />
+      </button>
+
       {/* Premium */}
-      <button className="w-full bg-slate-100 rounded-lg p-4 mb-4 flex items-center justify-between border border-emerald-500/20">
+      <button className="w-full bg-white rounded-lg p-4 mb-4 flex items-center justify-between border border-emerald-500/20 shadow-sm hover:bg-slate-50 transition-colors">
         <div className="flex items-center gap-3 text-emerald-600">
           <Award size={20} />
           <span className="font-medium text-sm">{t('upgradeToPremium')}</span>
         </div>
         <ChevronRight size={20} className="text-emerald-500" />
       </button>
-      <button className="w-full bg-amber-500/10 rounded-lg p-4 mb-8 flex items-center justify-between border border-amber-500/20">
+      <button className="w-full bg-white rounded-lg p-4 mb-8 flex items-center justify-between border border-amber-500/20 shadow-sm hover:bg-slate-50 transition-colors">
         <div className="flex items-center gap-3 text-amber-600">
           <Star size={20} />
           <span className="font-medium text-sm">{t('claimAdFree')}</span>
@@ -5468,10 +5297,10 @@ const SettingsView = React.memo(({
       {/* Appearance */}
       <div className="mb-8">
         <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('appearance')}</h3>
-        <div className="bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
           <button 
             onClick={onOpenEditHome}
-            className="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors"
+            className="w-full flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-[0.85rem] bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-emerald-500">
@@ -5487,7 +5316,7 @@ const SettingsView = React.memo(({
 
           <button 
             onClick={onOpenQuickActions}
-            className="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors"
+            className="w-full flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-[0.85rem] bg-purple-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-purple-500">
@@ -5527,7 +5356,7 @@ const SettingsView = React.memo(({
         <div className="bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
           <button 
             onClick={() => setShowCurrencyModal(true)}
-            className="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors"
+            className="w-full flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-[0.85rem] bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 shadow-sm flex items-center justify-center text-emerald-500">
@@ -5567,7 +5396,7 @@ const SettingsView = React.memo(({
             <ChevronRight size={16} className="text-slate-400" />
           </button>
 
-          <button className="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors">
+          <button className="w-full flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-[0.85rem] bg-purple-500/10 backdrop-blur-md border border-purple-500/20 shadow-sm flex items-center justify-center text-purple-500">
                 <Layout size={20} />
@@ -5583,7 +5412,7 @@ const SettingsView = React.memo(({
           {/* Widget Option */}
           <button 
             onClick={onOpenWidgetSettings}
-            className="w-full flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors"
+            className="w-full flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-[0.85rem] bg-amber-500/10 backdrop-blur-md border border-amber-500/20 shadow-sm flex items-center justify-center text-amber-500">
@@ -5600,7 +5429,7 @@ const SettingsView = React.memo(({
           {/* Floating Bubble Option */}
           <button 
             onClick={onOpenFloatingBubbleSettings}
-            className="w-full flex items-center justify-between p-4 hover:bg-slate-200 transition-colors"
+            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-[0.85rem] bg-rose-500/10 backdrop-blur-md border border-rose-500/20 shadow-sm flex items-center justify-center text-rose-500">
@@ -5619,8 +5448,8 @@ const SettingsView = React.memo(({
       {/* Security */}
       <div className="mb-8">
         <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('security')}</h3>
-        <div className="bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-          <div className="flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors">
+        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-[0.85rem] bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 shadow-sm flex items-center justify-center text-emerald-500">
                 <Shield size={20} />
@@ -5639,9 +5468,9 @@ const SettingsView = React.memo(({
           </div>
           
           {/* Privacy Mode */}
-          <div className="flex items-center justify-between p-4 hover:bg-slate-200 transition-colors">
+          <div className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-500">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-indigo-500/10 backdrop-blur-md border border-indigo-500/20 shadow-sm flex items-center justify-center text-indigo-500">
                 <Shield size={20} />
               </div>
               <div>
@@ -5664,13 +5493,13 @@ const SettingsView = React.memo(({
       {/* Data Backup */}
       <div className="mb-8">
         <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('dataBackup')}</h3>
-        <div className="bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
           <button 
             onClick={() => {}} // TODO: Implement export
-            className="w-full flex items-center justify-between p-4 hover:bg-slate-200 transition-colors"
+            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 shadow-sm flex items-center justify-center text-emerald-500">
                 <Cloud size={20} />
               </div>
               <div className="text-left">
@@ -5686,10 +5515,10 @@ const SettingsView = React.memo(({
       {/* Notifications */}
       <div className="mb-8">
         <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('notifications')}</h3>
-        <div className="bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-          <div className="flex items-center justify-between p-4 border-b border-slate-200 hover:bg-slate-200 transition-colors">
+        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center text-rose-500">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-rose-500/10 backdrop-blur-md border border-rose-500/20 shadow-sm flex items-center justify-center text-rose-500">
                 <Bell size={20} />
               </div>
               <div>
@@ -5706,10 +5535,10 @@ const SettingsView = React.memo(({
           </div>
           <button 
             onClick={() => onOpenDetail('Reminders')}
-            className="w-full flex items-center justify-between p-4 hover:bg-slate-200 transition-colors"
+            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-500">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-indigo-500/10 backdrop-blur-md border border-indigo-500/20 shadow-sm flex items-center justify-center text-indigo-500">
                 <Bell size={20} />
               </div>
               <div className="text-left">
@@ -5723,18 +5552,18 @@ const SettingsView = React.memo(({
       </div>
 
       {/* About */}
-      <div>
+      <div className="mb-8">
         <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('about')}</h3>
-        <div className="bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
           {[
             { label: t('rateUs'), icon: Star, sub: t('leaveReview') },
             { label: t('inviteFriend'), icon: Users, sub: t('shareWithFriends') },
             { label: t('website'), icon: Globe, sub: t('visitWebsite') },
             { label: t('version'), icon: Info, sub: '2.8.1' },
           ].map((item) => (
-            <button key={item.label} className="w-full flex items-center justify-between p-4 hover:bg-slate-200 transition-colors border-b border-slate-200 last:border-0">
+            <button key={item.label} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center text-slate-600">
+                <div className="w-10 h-10 rounded-[0.85rem] bg-slate-500/10 backdrop-blur-md border border-slate-500/20 shadow-sm flex items-center justify-center text-slate-600">
                   <item.icon size={20} />
                 </div>
                 <div className="text-left">
@@ -5746,6 +5575,17 @@ const SettingsView = React.memo(({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Logout */}
+      <div className="mb-8">
+        <button 
+          onClick={onLogout}
+          className="w-full bg-white rounded-lg p-4 flex items-center justify-center gap-2 border border-rose-200 shadow-sm hover:bg-rose-50 transition-colors text-rose-600 font-medium"
+        >
+          <LogOut size={20} />
+          <span>{t('logout') || 'Logout'}</span>
+        </button>
       </div>
       </div>
       
@@ -5842,8 +5682,12 @@ const WorkspaceDetail = React.memo(({ id, onBack }: { id: string, onBack: () => 
             <div key={exp.id} className="w-full p-3 border-b border-slate-200 last:border-0">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0">
-                    <img src={exp.avatar} alt={exp.paidBy} className="w-full h-full object-cover" />
+                  <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-slate-200 flex items-center justify-center">
+                    {exp.avatar ? (
+                      <img src={exp.avatar} alt={exp.paidBy} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-slate-500 font-medium">{exp.paidBy?.[0]?.toUpperCase() || '?'}</span>
+                    )}
                   </div>
                   <div className="text-left">
                     <h4 className="text-slate-900 font-medium text-sm">
@@ -6568,7 +6412,7 @@ const AddTransactionView = React.memo(({
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 20 }}
         transition={{ type: "spring", damping: 25, stiffness: 200, mass: 0.8 }}
-        className="absolute inset-0 bg-white flex flex-col will-change-transform z-50"
+        className="absolute inset-0 bg-slate-50 flex flex-col will-change-transform z-50"
         onClick={() => {
           setShowMoreTypes(false);
           setShowStatusDropdown(false);
@@ -6577,7 +6421,7 @@ const AddTransactionView = React.memo(({
         }}
       >
         {/* 2. Header */}
-        <div className="h-[56px] shrink-0 flex items-center bg-white z-10" onClick={(e) => e.stopPropagation()}>
+        <div className="h-[56px] shrink-0 flex items-center bg-slate-50 z-10" onClick={(e) => e.stopPropagation()}>
           <button 
             onClick={onBack}
             className="ml-4 w-6 h-6 flex items-center justify-center text-slate-900"
@@ -6679,9 +6523,9 @@ const AddTransactionView = React.memo(({
         </div>
 
         {/* 4. Amount & Description Section (Combined Card) */}
-        <div className="mx-6 mb-4 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="mx-6 mb-4 rounded-xl bg-white border border-slate-200 shadow-sm overflow-hidden" onClick={(e) => e.stopPropagation()}>
           {/* Amount Part */}
-          <div className="py-4 px-4 flex flex-col items-center relative border-b border-slate-100/50">
+          <div className="py-4 px-4 flex flex-col items-center relative border-b border-slate-100">
             <div className="flex items-center justify-center gap-2 w-full">
               <span className={cn(
                 "text-[24px] font-medium", 
@@ -6714,7 +6558,7 @@ const AddTransactionView = React.memo(({
                     setShowPersonDropdown(false);
                     setCategory('');
                   }}
-                  className="p-2 bg-white rounded-lg shadow-sm text-slate-600 hover:text-slate-900 transition-colors"
+                  className="p-2 bg-slate-50 rounded-lg shadow-sm text-slate-600 hover:text-slate-900 transition-colors border border-slate-100"
                 >
                   <Calculator size={20} />
                 </button>
@@ -6842,7 +6686,7 @@ const AddTransactionView = React.memo(({
                 setShowPersonDropdown(false);
                 setCategory('');
               }}
-              className="min-w-[100px] h-[40px] rounded-lg flex items-center justify-center gap-2 transition-colors shrink-0 px-4 bg-slate-50 text-slate-600 border border-dashed border-slate-300"
+              className="min-w-[100px] h-[40px] rounded-lg flex items-center justify-center gap-2 transition-colors shrink-0 px-4 bg-white text-slate-600 border border-dashed border-slate-300 shadow-sm"
             >
               <Plus size={16} />
               <span className="text-[14px] font-medium">{t('more')}</span>
@@ -6890,7 +6734,7 @@ const AddTransactionView = React.memo(({
                   setShowPersonDropdown(false);
                   setCategory('');
                 }}
-                className="min-w-[100px] h-[40px] rounded-lg flex items-center justify-center gap-2 transition-colors shrink-0 px-4 bg-slate-50 text-slate-600 border border-dashed border-slate-300"
+                className="min-w-[100px] h-[40px] rounded-lg flex items-center justify-center gap-2 transition-colors shrink-0 px-4 bg-white text-slate-600 border border-dashed border-slate-300 shadow-sm"
               >
                 <Plus size={16} />
                 <span className="text-[14px] font-medium">{t('more')}</span>
@@ -8085,6 +7929,10 @@ const GlobalSearchView = React.memo(({
 // --- Main App ---
 
 export default function App() {
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean>(() => {
+    return localStorage.getItem('onboarding_complete') === 'true';
+  });
+
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('appLanguage');
     return (saved === 'en' || saved === 'bn') ? saved : 'en';
@@ -8120,6 +7968,28 @@ export default function App() {
     const saved = localStorage.getItem('appFloatingBubbleEnabled');
     return saved ? JSON.parse(saved) : false;
   });
+
+  const [profileName, setProfileName] = useState<string>(() => {
+    return localStorage.getItem('profileName') || '';
+  });
+  const [profileEmail, setProfileEmail] = useState<string>(() => {
+    return localStorage.getItem('profileEmail') || '';
+  });
+  const [profileImage, setProfileImage] = useState<string>(() => {
+    return localStorage.getItem('profileImage') || '';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('profileEmail', profileEmail);
+  }, [profileEmail]);
+
+  useEffect(() => {
+    localStorage.setItem('profileImage', profileImage);
+  }, [profileImage]);
+
+  useEffect(() => {
+    localStorage.setItem('profileName', profileName);
+  }, [profileName]);
 
   useEffect(() => {
     localStorage.setItem('appDarkMode', JSON.stringify(darkMode));
@@ -8218,18 +8088,8 @@ export default function App() {
         { id: 'cat-crypto', name: t('crypto'), icon: 'Zap', color: '#f59e0b' },
       ]
     },
-    subCategories: [
-      { id: 'sub-dinner', name: t('dinner'), icon: 'Layers', color: '#64748b' },
-      { id: 'sub-lunch', name: t('lunch'), icon: 'Layers', color: '#64748b' },
-      { id: 'sub-electronics', name: t('electronics'), icon: 'Layers', color: '#64748b' },
-      { id: 'sub-groceries', name: t('groceries'), icon: 'Layers', color: '#64748b' }
-    ],
-    persons: [
-      { id: 'per-abid', name: 'Abid', icon: 'Users', color: '#3b82f6' },
-      { id: 'per-sarah', name: 'Sarah', icon: 'Users', color: '#ec4899' },
-      { id: 'per-john', name: 'John', icon: 'Users', color: '#10b981' },
-      { id: 'per-family', name: t('family'), icon: 'Users', color: '#f59e0b' }
-    ],
+    subCategories: [],
+    persons: [],
     accounts: [
       { id: 'acc-cash', name: t('cash'), icon: 'Wallet', color: '#10b981', accountType: t('cash'), isDefault: true, isPinned: true, balance: 0, includeInTotal: true },
       { id: 'acc-bank', name: t('bankAccount'), icon: 'Database', color: '#3b82f6', accountType: t('bankAccount'), isPinned: true, balance: 0, includeInTotal: true },
@@ -8237,11 +8097,7 @@ export default function App() {
       { id: 'acc-bkash', name: 'Bkash', icon: 'Smartphone', color: '#ec4899', accountType: t('mobileFinancialService'), balance: 0, includeInTotal: true },
     ],
     accountTypes: [t('cash'), t('payment'), t('mobileFinancialService'), t('bankAccount')],
-    reminders: [
-      { id: 'rem-rent', name: t('rentPayment'), date: '2026-04-01', amount: '0', icon: 'Home' },
-      { id: 'rem-elec', name: t('electricityBill'), date: '2026-03-20', amount: '0', icon: 'Zap' },
-      { id: 'rem-int', name: t('internetBill'), date: '2026-03-25', amount: '0', icon: 'Globe' },
-    ],
+    reminders: [],
     tasks: [],
     budgets: [],
     recurring: [],
@@ -8356,8 +8212,14 @@ export default function App() {
     currency, 
     setCurrency, 
     t: (key: string) => (translations[language] as any)[key] || key, 
-    formatAmount 
-  }), [language, currency, formatAmount]);
+    formatAmount,
+    profileName,
+    setProfileName,
+    profileEmail,
+    setProfileEmail,
+    profileImage,
+    setProfileImage
+  }), [language, currency, formatAmount, profileName, profileEmail, profileImage]);
 
   const getCategoryKey = (category: string) => {
     switch (category) {
@@ -8548,77 +8410,136 @@ export default function App() {
     setManagementDetail({ label, isAdding: true });
   }, []);
 
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('onboarding_complete');
+    localStorage.removeItem('appLanguage');
+    localStorage.removeItem('appCurrency');
+    localStorage.removeItem('appDarkMode');
+    localStorage.removeItem('appWidgetEnabled');
+    localStorage.removeItem('appFloatingBubbleEnabled');
+    localStorage.removeItem('profileName');
+    window.location.reload();
+  }, []);
+
+  if (!onboardingComplete) {
+    return (
+      <LanguageContext.Provider value={contextValue}>
+        <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
+          <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-2xl overflow-hidden">
+            <OnboardingView onComplete={(data) => {
+              setLanguage(data.language as Language);
+              setProfileName(data.name);
+              if (data.profileImage) {
+                setProfileImage(data.profileImage);
+              }
+              setCurrency(data.currency);
+              localStorage.setItem('userOccupation', data.occupation);
+              
+              // Update accounts
+              setManagementData(prev => ({
+                ...prev,
+                accounts: data.accounts
+              }));
+
+              // Save to Supabase (non-blocking)
+              supabase.from('user_settings').insert([
+                {
+                  name: data.name,
+                  profile_image: data.profileImage,
+                  currency: data.currency,
+                  accounts: data.accounts,
+                  language: data.language,
+                  occupation: data.occupation,
+                  categories: {
+                    income: ['বেতন', 'ব্যবসা', 'উপহার', 'অন্যান্য'],
+                    expense: ['খাবার', 'শপিং', 'যাতায়াত', 'বিল', 'অন্যান্য']
+                  },
+                  created_at: new Date().toISOString()
+                }
+              ]).then(({ error }) => {
+                if (error) console.error('Error saving to Supabase:', error);
+              });
+
+              localStorage.setItem('onboarding_complete', 'true');
+              setOnboardingComplete(true);
+            }} />
+          </div>
+        </div>
+      </LanguageContext.Provider>
+    );
+  }
+
   return (
     <LanguageContext.Provider value={contextValue}>
       <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
         <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-2xl overflow-hidden">
-        
-        <AnimatePresence>
-          {selectedTransaction && activeTab !== 'edit' ? (
-            <TransactionDetailView 
-              key="detail"
-              tx={selectedTransaction} 
-              onBack={() => setSelectedTransaction(null)}
-              onDelete={(id) => {
-                setTransactions(prev => prev.filter(t => t.id !== id));
-                setSelectedTransaction(null);
-              }}
-              onEdit={() => setActiveTab('edit')}
-              transactions={transactions}
-            />
-          ) : activeTab === 'add' || activeTab === 'edit' ? (
-            <AddTransactionView 
-              key="add"
-              initialData={activeTab === 'edit' ? selectedTransaction : initialAddData}
-              transactions={transactions}
-              onBack={() => {
-                setActiveTab('home');
-                if (activeTab === 'edit') setSelectedTransaction(null);
-                setInitialAddData(null);
-              }}
-              managementData={managementData}
-              onAddTransaction={(tx) => setTransactions(prev => [tx, ...prev])}
-              onUpdateTransaction={(tx) => {
-                setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t));
-                setSelectedTransaction(tx);
-                setActiveTab('home');
-              }}
-              onAddManagementItem={addManagementItem}
-              onOpenAddReminder={handleOpenAddReminder}
-            />
-          ) : activeTab === 'notifications' ? (
-            <NotificationsView 
-              key="notifications"
-              onBack={() => setActiveTab('home')}
-            />
-          ) : activeTab === 'pdfManager' ? (
-            <PdfManagerView 
-              key="pdfManager"
-              onBack={() => setActiveTab('home')}
-            />
-          ) : (
-            <motion.div 
-              key="main-content"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200, mass: 0.8 }}
-              className="absolute inset-0 flex flex-col bg-white pb-24 overflow-y-auto will-change-transform"
-            >
-              {activeTab === 'home' && (
-                <UnifiedTopBar 
-                  isHome={true} 
-                  showActions={true}
-                  title={undefined}
-                  balance={totals.balance} 
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  onSearchFocus={() => setIsSearchOpen(true)}
-                  onFilter={() => setShowFilterModal(true)}
-                  onNotifications={() => setActiveTab('notifications')}
-                  onPdfExport={handlePdfExport}
-                />
-              )}
+          <AnimatePresence>
+            {selectedTransaction && activeTab !== 'edit' ? (
+              <TransactionDetailView 
+                key="detail"
+                tx={selectedTransaction} 
+                onBack={() => setSelectedTransaction(null)}
+                onDelete={(id) => {
+                  setTransactions(prev => prev.filter(t => t.id !== id));
+                  setSelectedTransaction(null);
+                }}
+                onEdit={() => setActiveTab('edit')}
+                transactions={transactions}
+              />
+            ) : activeTab === 'add' || activeTab === 'edit' ? (
+              <AddTransactionView 
+                key="add"
+                initialData={activeTab === 'edit' ? selectedTransaction : initialAddData}
+                transactions={transactions}
+                onBack={() => {
+                  setActiveTab('home');
+                  if (activeTab === 'edit') setSelectedTransaction(null);
+                  setInitialAddData(null);
+                }}
+                managementData={managementData}
+                onAddTransaction={(tx) => setTransactions(prev => [tx, ...prev])}
+                onUpdateTransaction={(tx) => {
+                  setTransactions(prev => prev.map(t => t.id === tx.id ? tx : t));
+                  setSelectedTransaction(tx);
+                  setActiveTab('home');
+                }}
+                onAddManagementItem={addManagementItem}
+                onOpenAddReminder={handleOpenAddReminder}
+              />
+            ) : activeTab === 'notifications' ? (
+              <NotificationsView 
+                key="notifications"
+                onBack={() => setActiveTab('home')}
+              />
+            ) : activeTab === 'pdfManager' ? (
+              <PdfManagerView 
+                key="pdfManager"
+                onBack={() => setActiveTab('home')}
+              />
+            ) : (
+              <motion.div 
+                key="main-content"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200, mass: 0.8 }}
+                className="absolute inset-0 flex flex-col bg-white pb-24 overflow-y-auto will-change-transform"
+              >
+                {activeTab === 'home' && (
+                  <UnifiedTopBar 
+                    isHome={true} 
+                    showActions={true}
+                    title={undefined}
+                    balance={totals.balance} 
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    onSearchFocus={() => setIsSearchOpen(true)}
+                    onFilter={() => setShowFilterModal(true)}
+                    onNotifications={() => setActiveTab('notifications')}
+                    onPdfExport={handlePdfExport}
+                    onLogout={handleLogout}
+                  />
+                )}
               <div className="flex-1">
                 {activeTab === 'home' ? (
                   <HomeView 
@@ -8692,6 +8613,11 @@ export default function App() {
                     setFloatingBubbleEnabled={setFloatingBubbleEnabled}
                     onOpenWidgetSettings={() => setActiveTab('widgetSettings')}
                     onOpenFloatingBubbleSettings={() => setActiveTab('floatingBubbleSettings')}
+                    onLogout={() => {
+                      localStorage.removeItem('onboarding_complete');
+                      setOnboardingComplete(false);
+                      setActiveTab('home');
+                    }}
                   />
                 ) : activeTab === 'editHome' ? (
                   <EditHomePageView 
@@ -8752,6 +8678,7 @@ export default function App() {
           {showProfileView && (
             <ProfileView 
               transactions={transactions} 
+              managementData={managementData}
               onClose={() => setShowProfileView(false)} 
             />
           )}
