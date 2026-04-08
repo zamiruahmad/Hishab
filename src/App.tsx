@@ -8172,9 +8172,15 @@ export default function App() {
         // Fetch profile if session exists
         supabase.from('user_settings').select('id, name').eq('id', session.user.id).single().then(({ data, error }) => {
           if (data && !error) {
-            if (data.name && !localStorage.getItem('profileName')) setProfileName(data.name);
+            console.log('Profile found in Supabase:', data.name);
+            if (data.name && (!profileName || profileName.trim() === '')) {
+              setProfileName(data.name);
+              localStorage.setItem('profileName', data.name);
+            }
             setOnboardingComplete(true);
             localStorage.setItem('onboarding_complete', 'true');
+          } else if (error) {
+            console.log('No profile found in Supabase or error:', error.message);
           }
           setIsProfileLoaded(true);
         });
@@ -8200,7 +8206,11 @@ export default function App() {
       if (session) {
         supabase.from('user_settings').select('id, name').eq('id', session.user.id).single().then(({ data, error }) => {
           if (data && !error) {
-            if (data.name && !localStorage.getItem('profileName')) setProfileName(data.name);
+            console.log('Profile found in Supabase (auth change):', data.name);
+            if (data.name && (!profileName || profileName.trim() === '')) {
+              setProfileName(data.name);
+              localStorage.setItem('profileName', data.name);
+            }
             setOnboardingComplete(true);
             localStorage.setItem('onboarding_complete', 'true');
           }
@@ -8603,6 +8613,8 @@ export default function App() {
     }
 
     setIsRestoring(true);
+    const fileName = `finance_backup_${session?.user?.id || 'default'}.json`;
+    console.log('Restoring file:', fileName);
 
     try {
       const response = await fetch('/api/drive/restore', {
@@ -8610,7 +8622,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tokens: googleTokens,
-          fileName: `finance_backup_${session?.user?.id || 'default'}.json`
+          fileName: fileName
         })
       });
 
@@ -8620,48 +8632,99 @@ export default function App() {
         throw new Error(result.error || `Server responded with ${response.status}`);
       }
 
-      console.log('Restore server response:', result);
+      console.log('Restore successful, data received.');
 
       if (result.data) {
         const data = result.data;
         
         // Restore Transactions
-        if (data.transactions) setTransactions(data.transactions);
+        if (data.transactions) {
+          setTransactions(data.transactions);
+          localStorage.setItem('transactions', JSON.stringify(data.transactions));
+        }
         
         // Restore Management Data
-        if (data.managementData) setManagementData(data.managementData);
+        if (data.managementData) {
+          setManagementData(data.managementData);
+          localStorage.setItem('management_data', JSON.stringify(data.managementData));
+        }
         
         // Restore Profile (New format)
         if (data.profile) {
-          if (data.profile.name) setProfileName(data.profile.name);
-          if (data.profile.image) setProfileImage(data.profile.image);
-          if (data.profile.email) setProfileEmail(data.profile.email);
-          if (data.profile.language) setLanguage(data.profile.language);
-          if (data.profile.currency) setCurrency(data.profile.currency);
+          if (data.profile.name) {
+            setProfileName(data.profile.name);
+            localStorage.setItem('profileName', data.profile.name);
+          }
+          if (data.profile.image) {
+            setProfileImage(data.profile.image);
+            localStorage.setItem('profileImage', data.profile.image);
+          }
+          if (data.profile.email) {
+            setProfileEmail(data.profile.email);
+            localStorage.setItem('profileEmail', data.profile.email);
+          }
+          if (data.profile.language) {
+            setLanguage(data.profile.language);
+            localStorage.setItem('appLanguage', data.profile.language);
+          }
+          if (data.profile.currency) {
+            setCurrency(data.profile.currency);
+            localStorage.setItem('appCurrency', JSON.stringify(data.profile.currency));
+          }
         } 
         // Fallback for old format
         else if (data.onboarding) {
-          if (data.onboarding.name) setProfileName(data.onboarding.name);
-          if (data.onboarding.profileImage) setProfileImage(data.onboarding.profileImage);
-          if (data.onboarding.language) setLanguage(data.onboarding.language);
-          if (data.onboarding.currency) setCurrency(data.onboarding.currency);
+          if (data.onboarding.name) {
+            setProfileName(data.onboarding.name);
+            localStorage.setItem('profileName', data.onboarding.name);
+          }
+          if (data.onboarding.profileImage) {
+            setProfileImage(data.onboarding.profileImage);
+            localStorage.setItem('profileImage', data.onboarding.profileImage);
+          }
+          if (data.onboarding.language) {
+            setLanguage(data.onboarding.language);
+            localStorage.setItem('appLanguage', data.onboarding.language);
+          }
+          if (data.onboarding.currency) {
+            setCurrency(data.onboarding.currency);
+            localStorage.setItem('appCurrency', JSON.stringify(data.onboarding.currency));
+          }
         }
 
         // Restore Settings
         if (data.settings) {
-          if (data.settings.darkMode !== undefined) setDarkMode(data.settings.darkMode);
-          if (data.settings.widgetEnabled !== undefined) setWidgetEnabled(data.settings.widgetEnabled);
-          if (data.settings.floatingBubbleEnabled !== undefined) setFloatingBubbleEnabled(data.settings.floatingBubbleEnabled);
-          if (data.settings.homeSections) setHomeSections(data.settings.homeSections);
-          if (data.settings.autoBackup) setAutoBackup(data.settings.autoBackup);
-          if (data.settings.backupNetwork) setBackupNetwork(data.settings.backupNetwork);
+          if (data.settings.darkMode !== undefined) {
+            setDarkMode(data.settings.darkMode);
+            localStorage.setItem('appDarkMode', JSON.stringify(data.settings.darkMode));
+          }
+          if (data.settings.widgetEnabled !== undefined) {
+            setWidgetEnabled(data.settings.widgetEnabled);
+            localStorage.setItem('appWidgetEnabled', JSON.stringify(data.settings.widgetEnabled));
+          }
+          if (data.settings.floatingBubbleEnabled !== undefined) {
+            setFloatingBubbleEnabled(data.settings.floatingBubbleEnabled);
+            localStorage.setItem('appFloatingBubbleEnabled', JSON.stringify(data.settings.floatingBubbleEnabled));
+          }
+          if (data.settings.homeSections) {
+            setHomeSections(data.settings.homeSections);
+            localStorage.setItem('appHomeSections', JSON.stringify(data.settings.homeSections));
+          }
+          if (data.settings.autoBackup) {
+            setAutoBackup(data.settings.autoBackup);
+            localStorage.setItem('appAutoBackup', data.settings.autoBackup);
+          }
+          if (data.settings.backupNetwork) {
+            setBackupNetwork(data.settings.backupNetwork);
+            localStorage.setItem('appBackupNetwork', data.settings.backupNetwork);
+          }
         }
 
         if (data.onboarding) {
           localStorage.setItem('onboarding_data', JSON.stringify(data.onboarding));
         }
 
-        alert('Restore successful!');
+        alert('Restore successful! Your data and profile have been updated.');
       } else {
         throw new Error(result.error || 'No backup data found or unknown error');
       }
