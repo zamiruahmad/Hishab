@@ -4578,6 +4578,12 @@ const ProfileView = React.memo(({ transactions, managementData, onClose }: { tra
   const [tempName, setTempName] = useState(profileName);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!isEditingName) {
+      setTempName(profileName);
+    }
+  }, [profileName, isEditingName]);
+
   const handleSaveName = () => {
     if (tempName.trim()) {
       setProfileName(tempName.trim());
@@ -8138,10 +8144,9 @@ export default function App() {
       setSession(session);
       if (session) {
         // Fetch profile if session exists
-        supabase.from('user_settings').select('*').eq('id', session.user.id).single().then(({ data, error }) => {
+        supabase.from('user_settings').select('id, name').eq('id', session.user.id).single().then(({ data, error }) => {
           if (data && !error) {
-            if (data.name) setProfileName(data.name);
-            if (data.profile_image) setProfileImage(data.profile_image);
+            if (data.name && !localStorage.getItem('profileName')) setProfileName(data.name);
             setOnboardingComplete(true);
             localStorage.setItem('onboarding_complete', 'true');
           }
@@ -8158,10 +8163,9 @@ export default function App() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
-        supabase.from('user_settings').select('*').eq('id', session.user.id).single().then(({ data, error }) => {
+        supabase.from('user_settings').select('id, name').eq('id', session.user.id).single().then(({ data, error }) => {
           if (data && !error) {
-            if (data.name) setProfileName(data.name);
-            if (data.profile_image) setProfileImage(data.profile_image);
+            if (data.name && !localStorage.getItem('profileName')) setProfileName(data.name);
             setOnboardingComplete(true);
             localStorage.setItem('onboarding_complete', 'true');
           }
@@ -8192,7 +8196,6 @@ export default function App() {
         {
           id: session.user.id,
           name: profileName,
-          profile_image: profileImage,
           updated_at: new Date().toISOString()
         }
       ]).then(({ error }) => {
@@ -8201,7 +8204,7 @@ export default function App() {
         }
       });
     }
-  }, [session, isProfileLoaded, onboardingComplete, profileName, profileImage]);
+  }, [session, isProfileLoaded, onboardingComplete, profileName]);
 
   // Google OAuth Listener
   useEffect(() => {
@@ -8642,12 +8645,12 @@ export default function App() {
 
   const totals = useMemo(() => calculateTotals(), [transactions, managementData]);
 
-  const formatAmount = (amount: number) => {
+  const formatAmount = useCallback((amount: number) => {
     return `${amount.toLocaleString(language === 'bn' ? 'bn-BD' : 'en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
     })} ${currency.symbol}`;
-  };
+  }, [language, currency.symbol]);
 
   const contextValue = useMemo(() => ({ 
     language, 
