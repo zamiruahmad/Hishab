@@ -8140,7 +8140,14 @@ export default function App() {
 
   useEffect(() => {
     console.log('Supabase URL loaded:', import.meta.env.VITE_SUPABASE_URL ? 'Yes' : 'No');
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Auth session error:', error);
+        supabase.auth.signOut();
+        setSession(null);
+        setIsAuthChecking(false);
+        return;
+      }
       setSession(session);
       if (session) {
         // Fetch profile if session exists
@@ -8156,11 +8163,20 @@ export default function App() {
         setIsProfileLoaded(true);
       }
       setIsAuthChecking(false);
+    }).catch((err) => {
+      console.error('Unhandled auth session error:', err);
+      supabase.auth.signOut();
+      setSession(null);
+      setIsAuthChecking(false);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        setSession(null);
+        return;
+      }
       setSession(session);
       if (session) {
         supabase.from('user_settings').select('id, name').eq('id', session.user.id).single().then(({ data, error }) => {
