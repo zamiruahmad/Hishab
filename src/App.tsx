@@ -8183,7 +8183,7 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT' || (event as any) === 'USER_DELETED') {
         setSession(null);
         return;
       }
