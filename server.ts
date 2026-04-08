@@ -14,7 +14,8 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // --- API Routes ---
 
@@ -39,7 +40,7 @@ async function startServer() {
     const client = new google.auth.OAuth2(
       process.env.VITE_GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      currentRedirectUri || `https://ais-dev-4jn34g6oe7w4gngyrdg7pj-712773840993.asia-southeast1.run.app/auth/google/callback`
+      currentRedirectUri || `https://${req.headers.host}/auth/google/callback`
     );
 
     const scopes = [
@@ -62,7 +63,7 @@ async function startServer() {
   app.get(['/auth/google/callback', '/auth/google/callback/'], async (req, res) => {
     const { code } = req.query;
     const host = req.headers.host;
-    const protocol = req.protocol;
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const currentRedirectUri = process.env.GOOGLE_REDIRECT_URI || `${protocol}://${host}/auth/google/callback`;
 
     console.log('Callback received. Host:', host, 'Redirect URI used:', currentRedirectUri);
@@ -126,7 +127,7 @@ async function startServer() {
       );
 
       if (!tokens.refresh_token) {
-        console.warn('Backup request missing refresh token. If the access token is expired, this will fail.');
+        console.warn('Backup request missing refresh token.');
       }
 
       client.setCredentials(tokens);
@@ -170,9 +171,18 @@ async function startServer() {
     } catch (error: any) {
       console.error('Error backing up to Drive:', error);
       let errorMessage = error?.message || String(error);
-      if (errorMessage.toLowerCase().includes('refresh token') || errorMessage.includes('invalid_grant') || errorMessage.includes('No refresh token is set')) {
-        errorMessage = 'Google Drive connection expired or invalid. Please disconnect and reconnect Google Drive in Settings.';
+      
+      // Handle common Google Auth errors
+      if (errorMessage.toLowerCase().includes('refresh token') || 
+          errorMessage.includes('invalid_grant') || 
+          errorMessage.includes('No refresh token is set') ||
+          errorMessage.includes('invalid_token')) {
+        return res.status(401).json({ 
+          error: 'Google Drive connection expired or invalid. Please disconnect and reconnect Google Drive in Settings.',
+          code: 'AUTH_EXPIRED'
+        });
       }
+      
       res.status(500).json({ error: errorMessage });
     }
   });
@@ -219,9 +229,17 @@ async function startServer() {
     } catch (error: any) {
       console.error('Error restoring from Drive:', error);
       let errorMessage = error?.message || String(error);
-      if (errorMessage.toLowerCase().includes('refresh token') || errorMessage.includes('invalid_grant') || errorMessage.includes('No refresh token is set')) {
-        errorMessage = 'Google Drive connection expired or invalid. Please disconnect and reconnect Google Drive in Settings.';
+      
+      if (errorMessage.toLowerCase().includes('refresh token') || 
+          errorMessage.includes('invalid_grant') || 
+          errorMessage.includes('No refresh token is set') ||
+          errorMessage.includes('invalid_token')) {
+        return res.status(401).json({ 
+          error: 'Google Drive connection expired or invalid. Please disconnect and reconnect Google Drive in Settings.',
+          code: 'AUTH_EXPIRED'
+        });
       }
+      
       res.status(500).json({ error: errorMessage });
     }
   });

@@ -92,7 +92,8 @@ import {
   LogOut,
   Camera,
   RefreshCw,
-  Wifi
+  Wifi,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'motion/react';
 import { 
@@ -5281,7 +5282,9 @@ const SettingsView = React.memo(({
   autoBackup,
   setAutoBackup,
   backupNetwork,
-  setBackupNetwork
+  setBackupNetwork,
+  isBackingUp,
+  isRestoring
 }: { 
   onOpenWorkspace: (id: string) => void, 
   onOpenDetail: (label: string) => void,
@@ -5310,7 +5313,9 @@ const SettingsView = React.memo(({
   autoBackup: string,
   setAutoBackup: (val: string) => void,
   backupNetwork: string,
-  setBackupNetwork: (val: string) => void
+  setBackupNetwork: (val: string) => void,
+  isBackingUp: boolean,
+  isRestoring: boolean
 }) => {
   const [privacyMode, setPrivacyMode] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
@@ -5394,18 +5399,19 @@ const SettingsView = React.memo(({
               </div>
               <button 
                 onClick={onBackupToDrive}
-                className="w-full flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                disabled={isBackingUp}
+                className={`w-full flex items-center justify-between p-4 border-b border-slate-100 transition-colors ${isBackingUp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-[0.85rem] bg-blue-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-blue-500">
-                    <CloudUpload size={20} />
+                    {isBackingUp ? <Loader2 size={20} className="animate-spin" /> : <CloudUpload size={20} />}
                   </div>
                   <div className="text-left">
-                    <h4 className="text-slate-900 font-medium text-sm">{t('backupNow') || 'Backup Now'}</h4>
+                    <h4 className="text-slate-900 font-medium text-sm">{isBackingUp ? 'Backing up...' : (t('backupNow') || 'Backup Now')}</h4>
                     <p className="text-slate-500 text-xs">{t('uploadToDrive') || 'Upload current data to Drive'}</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-slate-400" />
+                {!isBackingUp && <ChevronRight size={16} className="text-slate-400" />}
               </button>
 
               <div className="flex items-center justify-between p-4 border-b border-slate-100">
@@ -5454,18 +5460,19 @@ const SettingsView = React.memo(({
 
               <button 
                 onClick={onRestoreFromDrive}
-                className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+                disabled={isRestoring}
+                className={`w-full flex items-center justify-between p-4 transition-colors ${isRestoring ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-[0.85rem] bg-purple-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-purple-500">
-                    <CloudDownload size={20} />
+                    {isRestoring ? <Loader2 size={20} className="animate-spin" /> : <CloudDownload size={20} />}
                   </div>
                   <div className="text-left">
-                    <h4 className="text-slate-900 font-medium text-sm">{t('restoreNow') || 'Restore Now'}</h4>
+                    <h4 className="text-slate-900 font-medium text-sm">{isRestoring ? 'Restoring...' : (t('restoreNow') || 'Restore Now')}</h4>
                     <p className="text-slate-500 text-xs">{t('downloadFromDrive') || 'Download data from Drive'}</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-slate-400" />
+                {!isRestoring && <ChevronRight size={16} className="text-slate-400" />}
               </button>
             </>
           )}
@@ -8128,6 +8135,9 @@ export default function App() {
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isProfileLoaded, setIsProfileLoaded] = useState(false);
 
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+
   const [profileName, setProfileName] = useState<string>(() => {
     return localStorage.getItem('profileName') || '';
   });
@@ -8173,7 +8183,7 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      if (event === 'SIGNED_OUT') {
         setSession(null);
         return;
       }
@@ -8256,11 +8266,36 @@ export default function App() {
       if (!silent) alert('Please connect your Google Drive first.');
       return;
     }
+
+    if (!googleTokens.refresh_token) {
+      console.warn('Backup aborted: No refresh token found.');
+      if (!silent) alert('Google Drive connection is incomplete. Please disconnect and reconnect Google Drive in Settings to enable backup.');
+      return;
+    }
+    
+    if (!silent) setIsBackingUp(true);
     
     const backupData = {
       transactions,
       managementData,
-      onboarding: JSON.parse(localStorage.getItem('onboarding_data') || '{}')
+      profile: {
+        name: profileName,
+        image: profileImage,
+        email: profileEmail,
+        language,
+        currency
+      },
+      settings: {
+        darkMode,
+        widgetEnabled,
+        floatingBubbleEnabled,
+        homeSections,
+        autoBackup,
+        backupNetwork
+      },
+      onboarding: JSON.parse(localStorage.getItem('onboarding_data') || '{}'),
+      version: '2.0',
+      timestamp: new Date().toISOString()
     };
 
     console.log('Backup data prepared, sending to server...');
@@ -8276,12 +8311,12 @@ export default function App() {
         })
       });
       
+      const result = await response.json().catch(() => ({ error: 'Failed to parse server response' }));
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server responded with ${response.status}: ${errorText}`);
+        throw new Error(result.error || `Server responded with ${response.status}`);
       }
 
-      const result = await response.json();
       console.log('Backup server response:', result);
 
       if (result.success) {
@@ -8291,7 +8326,13 @@ export default function App() {
       }
     } catch (error: any) {
       console.error('Backup failed:', error);
-      if (!silent) alert('Backup failed: ' + error.message);
+      let msg = error.message;
+      if (msg === 'Failed to fetch') {
+        msg = 'Could not reach the server. Please check your internet connection or try again later.';
+      }
+      if (!silent) alert('Backup failed: ' + msg);
+    } finally {
+      if (!silent) setIsBackingUp(false);
     }
   };
 
@@ -8303,6 +8344,14 @@ export default function App() {
       return;
     }
 
+    if (!googleTokens.refresh_token) {
+      console.warn('Restore aborted: No refresh token found.');
+      alert('Google Drive connection is incomplete. Please disconnect and reconnect Google Drive in Settings to enable restore.');
+      return;
+    }
+
+    setIsRestoring(true);
+
     try {
       const response = await fetch('/api/drive/restore', {
         method: 'POST',
@@ -8313,25 +8362,53 @@ export default function App() {
         })
       });
 
+      const result = await response.json().catch(() => ({ error: 'Failed to parse server response' }));
+
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server responded with ${response.status}: ${errorText}`);
+        throw new Error(result.error || `Server responded with ${response.status}`);
       }
 
-      const result = await response.json();
       console.log('Restore server response:', result);
 
       if (result.data) {
         const data = result.data;
+        
+        // Restore Transactions
         if (data.transactions) setTransactions(data.transactions);
+        
+        // Restore Management Data
         if (data.managementData) setManagementData(data.managementData);
+        
+        // Restore Profile (New format)
+        if (data.profile) {
+          if (data.profile.name) setProfileName(data.profile.name);
+          if (data.profile.image) setProfileImage(data.profile.image);
+          if (data.profile.email) setProfileEmail(data.profile.email);
+          if (data.profile.language) setLanguage(data.profile.language);
+          if (data.profile.currency) setCurrency(data.profile.currency);
+        } 
+        // Fallback for old format
+        else if (data.onboarding) {
+          if (data.onboarding.name) setProfileName(data.onboarding.name);
+          if (data.onboarding.profileImage) setProfileImage(data.onboarding.profileImage);
+          if (data.onboarding.language) setLanguage(data.onboarding.language);
+          if (data.onboarding.currency) setCurrency(data.onboarding.currency);
+        }
+
+        // Restore Settings
+        if (data.settings) {
+          if (data.settings.darkMode !== undefined) setDarkMode(data.settings.darkMode);
+          if (data.settings.widgetEnabled !== undefined) setWidgetEnabled(data.settings.widgetEnabled);
+          if (data.settings.floatingBubbleEnabled !== undefined) setFloatingBubbleEnabled(data.settings.floatingBubbleEnabled);
+          if (data.settings.homeSections) setHomeSections(data.settings.homeSections);
+          if (data.settings.autoBackup) setAutoBackup(data.settings.autoBackup);
+          if (data.settings.backupNetwork) setBackupNetwork(data.settings.backupNetwork);
+        }
+
         if (data.onboarding) {
           localStorage.setItem('onboarding_data', JSON.stringify(data.onboarding));
-          setProfileName(data.onboarding.name);
-          setProfileImage(data.onboarding.profileImage);
-          setLanguage(data.onboarding.language);
-          setCurrency(data.onboarding.currency);
         }
+
         alert('Restore successful!');
       } else {
         throw new Error(result.error || 'No backup data found or unknown error');
@@ -8339,6 +8416,8 @@ export default function App() {
     } catch (error: any) {
       console.error('Restore failed:', error);
       alert('Restore failed: ' + error.message);
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -8518,62 +8597,91 @@ export default function App() {
   }, [language]);
 
   // Management State
-  const [managementData, setManagementData] = useState({
-    categories: {
-      expense: [
-        { id: 'cat-food', name: t('foodDrinks'), icon: 'Utensils', color: '#f97316' },
-        { id: 'cat-shopping', name: t('shopping'), icon: 'ShoppingBag', color: '#ec4899' },
-        { id: 'cat-transport', name: t('transport'), icon: 'Bus', color: '#3b82f6' },
-        { id: 'cat-utilities', name: t('utilities'), icon: 'Zap', color: '#eab308' },
-        { id: 'cat-others-exp', name: t('others'), icon: 'Tag', color: '#64748b' },
+  const [managementData, setManagementData] = useState(() => {
+    const saved = localStorage.getItem('management_data');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing management_data:', e);
+      }
+    }
+    return {
+      categories: {
+        expense: [
+          { id: 'cat-food', name: t('foodDrinks'), icon: 'Utensils', color: '#f97316' },
+          { id: 'cat-shopping', name: t('shopping'), icon: 'ShoppingBag', color: '#ec4899' },
+          { id: 'cat-transport', name: t('transport'), icon: 'Bus', color: '#3b82f6' },
+          { id: 'cat-utilities', name: t('utilities'), icon: 'Zap', color: '#eab308' },
+          { id: 'cat-others-exp', name: t('others'), icon: 'Tag', color: '#64748b' },
+        ],
+        income: [
+          { id: 'cat-salary', name: t('salary'), icon: 'Banknote', color: '#10b981' },
+          { id: 'cat-business', name: t('business'), icon: 'Briefcase', color: '#3b82f6' },
+          { id: 'cat-gift', name: t('gift'), icon: 'Star', color: '#f59e0b' },
+          { id: 'cat-others-inc', name: t('others'), icon: 'Tag', color: '#64748b' },
+        ],
+        dena: [
+          { id: 'cat-loan', name: t('loan'), icon: 'History', color: '#ef4444' },
+          { id: 'cat-credit', name: t('credit'), icon: 'CreditCard', color: '#f97316' },
+        ],
+        paona: [
+          { id: 'cat-lending', name: t('lending'), icon: 'ArrowUpRight', color: '#10b981' },
+          { id: 'cat-refund', name: t('refund'), icon: 'ArrowDownLeft', color: '#3b82f6' },
+        ],
+        joma: [
+          { id: 'cat-savings', name: t('savings'), icon: 'PiggyBank', color: '#8b5cf6' },
+          { id: 'cat-deposit', name: t('deposit'), icon: 'Database', color: '#6366f1' },
+        ],
+        invest: [
+          { id: 'cat-stocks', name: t('stocks'), icon: 'Layout', color: '#14b8a6' },
+          { id: 'cat-crypto', name: t('crypto'), icon: 'Zap', color: '#f59e0b' },
+        ]
+      },
+      subCategories: [],
+      persons: [],
+      accounts: [
+        { id: 'acc-cash', name: t('cash'), icon: 'Wallet', color: '#10b981', accountType: t('cash'), isDefault: true, isPinned: true, balance: 0, includeInTotal: true },
+        { id: 'acc-bank', name: t('bankAccount'), icon: 'Database', color: '#3b82f6', accountType: t('bankAccount'), isPinned: true, balance: 0, includeInTotal: true },
+        { id: 'acc-nagad', name: 'Nagad', icon: 'Smartphone', color: '#ef4444', accountType: t('mobileFinancialService'), isPinned: true, balance: 0, includeInTotal: true },
+        { id: 'acc-bkash', name: 'Bkash', icon: 'Smartphone', color: '#ec4899', accountType: t('mobileFinancialService'), balance: 0, includeInTotal: true },
       ],
-      income: [
-        { id: 'cat-salary', name: t('salary'), icon: 'Banknote', color: '#10b981' },
-        { id: 'cat-business', name: t('business'), icon: 'Briefcase', color: '#3b82f6' },
-        { id: 'cat-gift', name: t('gift'), icon: 'Star', color: '#f59e0b' },
-        { id: 'cat-others-inc', name: t('others'), icon: 'Tag', color: '#64748b' },
-      ],
-      dena: [
-        { id: 'cat-loan', name: t('loan'), icon: 'History', color: '#ef4444' },
-        { id: 'cat-credit', name: t('credit'), icon: 'CreditCard', color: '#f97316' },
-      ],
-      paona: [
-        { id: 'cat-lending', name: t('lending'), icon: 'ArrowUpRight', color: '#10b981' },
-        { id: 'cat-refund', name: t('refund'), icon: 'ArrowDownLeft', color: '#3b82f6' },
-      ],
-      joma: [
-        { id: 'cat-savings', name: t('savings'), icon: 'PiggyBank', color: '#8b5cf6' },
-        { id: 'cat-deposit', name: t('deposit'), icon: 'Database', color: '#6366f1' },
-      ],
-      invest: [
-        { id: 'cat-stocks', name: t('stocks'), icon: 'Layout', color: '#14b8a6' },
-        { id: 'cat-crypto', name: t('crypto'), icon: 'Zap', color: '#f59e0b' },
-      ]
-    },
-    subCategories: [],
-    persons: [],
-    accounts: [
-      { id: 'acc-cash', name: t('cash'), icon: 'Wallet', color: '#10b981', accountType: t('cash'), isDefault: true, isPinned: true, balance: 0, includeInTotal: true },
-      { id: 'acc-bank', name: t('bankAccount'), icon: 'Database', color: '#3b82f6', accountType: t('bankAccount'), isPinned: true, balance: 0, includeInTotal: true },
-      { id: 'acc-nagad', name: 'Nagad', icon: 'Smartphone', color: '#ef4444', accountType: t('mobileFinancialService'), isPinned: true, balance: 0, includeInTotal: true },
-      { id: 'acc-bkash', name: 'Bkash', icon: 'Smartphone', color: '#ec4899', accountType: t('mobileFinancialService'), balance: 0, includeInTotal: true },
-    ],
-    accountTypes: [t('cash'), t('payment'), t('mobileFinancialService'), t('bankAccount')],
-    reminders: [],
-    tasks: [],
-    budgets: [],
-    recurring: [],
-    subscriptions: [],
-    investments: [],
-    fixedDeposits: [],
-    payables: [],
-    receivables: [],
-    notes: [],
-    receipts: [],
-    pending: [],
+      accountTypes: [t('cash'), t('payment'), t('mobileFinancialService'), t('bankAccount')],
+      reminders: [],
+      tasks: [],
+      budgets: [],
+      recurring: [],
+      subscriptions: [],
+      investments: [],
+      fixedDeposits: [],
+      payables: [],
+      receivables: [],
+      notes: [],
+      receipts: [],
+      pending: [],
+    };
   });
 
-  const [transactions, setTransactions] = useState(TRANSACTIONS);
+  const [transactions, setTransactions] = useState(() => {
+    const saved = localStorage.getItem('transactions');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing transactions:', e);
+      }
+    }
+    return TRANSACTIONS;
+  });
+
+  // Persist transactions and managementData to localStorage
+  useEffect(() => {
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+  }, [transactions]);
+
+  useEffect(() => {
+    localStorage.setItem('management_data', JSON.stringify(managementData));
+  }, [managementData]);
 
   const calculateTotals = () => {
     let income = 0;
@@ -8977,6 +9085,36 @@ export default function App() {
               </div>
             </div>
           )}
+
+          <AnimatePresence>
+            {(isBackingUp || isRestoring) && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center text-white p-6"
+              >
+                <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="bg-white rounded-[2rem] p-8 flex flex-col items-center gap-4 shadow-2xl w-full max-w-xs"
+                >
+                  <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
+                    <Loader2 size={32} className="animate-spin" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-slate-900 font-bold text-xl mb-1">
+                      {isBackingUp ? (language === 'bn' ? 'ব্যাকআপ হচ্ছে...' : 'Backing up...') : (language === 'bn' ? 'রিস্টোর হচ্ছে...' : 'Restoring...')}
+                    </h3>
+                    <p className="text-slate-500 text-sm">
+                      {language === 'bn' ? 'দয়া করে অপেক্ষা করুন' : 'Please wait a moment'}
+                    </p>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <AnimatePresence>
             {selectedTransaction && activeTab !== 'edit' ? (
               <TransactionDetailView 
@@ -9127,6 +9265,8 @@ export default function App() {
                     setAutoBackup={setAutoBackup}
                     backupNetwork={backupNetwork}
                     setBackupNetwork={setBackupNetwork}
+                    isBackingUp={isBackingUp}
+                    isRestoring={isRestoring}
                   />
                 ) : activeTab === 'editHome' ? (
                   <EditHomePageView 
