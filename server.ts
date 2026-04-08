@@ -51,7 +51,8 @@ async function startServer() {
     const url = client.generateAuthUrl({
       access_type: 'offline',
       scope: scopes,
-      prompt: 'consent'
+      prompt: 'consent',
+      include_granted_scopes: true
     });
 
     res.json({ url });
@@ -78,6 +79,12 @@ async function startServer() {
       );
 
       const { tokens } = await client.getToken(code as string);
+      
+      console.log('Tokens received from Google:', {
+        has_access_token: !!tokens.access_token,
+        has_refresh_token: !!tokens.refresh_token,
+        expiry_date: tokens.expiry_date
+      });
       
       // Send tokens back to client via postMessage and close popup
       res.send(`
@@ -117,6 +124,11 @@ async function startServer() {
         process.env.VITE_GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET
       );
+
+      if (!tokens.refresh_token) {
+        console.warn('Backup request missing refresh token. If the access token is expired, this will fail.');
+      }
+
       client.setCredentials(tokens);
       const drive = google.drive({ version: 'v3', auth: client });
 
@@ -157,7 +169,11 @@ async function startServer() {
       }
     } catch (error: any) {
       console.error('Error backing up to Drive:', error);
-      res.status(500).json({ error: error.message });
+      let errorMessage = error.message;
+      if (errorMessage.includes('Refresh Token Not Found')) {
+        errorMessage = 'Google Drive connection expired or invalid. Please disconnect and reconnect Google Drive in Settings.';
+      }
+      res.status(500).json({ error: errorMessage });
     }
   });
 
@@ -174,6 +190,11 @@ async function startServer() {
         process.env.VITE_GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET
       );
+
+      if (!tokens.refresh_token) {
+        console.warn('Restore request missing refresh token.');
+      }
+
       client.setCredentials(tokens);
       const drive = google.drive({ version: 'v3', auth: client });
 
@@ -197,7 +218,11 @@ async function startServer() {
       res.json({ data: fileResponse.data });
     } catch (error: any) {
       console.error('Error restoring from Drive:', error);
-      res.status(500).json({ error: error.message });
+      let errorMessage = error.message;
+      if (errorMessage.includes('Refresh Token Not Found')) {
+        errorMessage = 'Google Drive connection expired or invalid. Please disconnect and reconnect Google Drive in Settings.';
+      }
+      res.status(500).json({ error: errorMessage });
     }
   });
 

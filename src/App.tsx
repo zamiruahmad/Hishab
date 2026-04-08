@@ -5230,6 +5230,7 @@ const SettingsView = React.memo(({
   onConnectGoogle,
   onBackupToDrive,
   onRestoreFromDrive,
+  onDisconnectGoogle,
   googleTokens
 }: { 
   onOpenWorkspace: (id: string) => void, 
@@ -5254,6 +5255,7 @@ const SettingsView = React.memo(({
   onConnectGoogle: () => void,
   onBackupToDrive: () => void,
   onRestoreFromDrive: () => void,
+  onDisconnectGoogle: () => void,
   googleTokens: any
 }) => {
   const [privacyMode, setPrivacyMode] = useState(true);
@@ -5321,12 +5323,20 @@ const SettingsView = React.memo(({
                     <p className="text-emerald-600 text-xs">{t('readyToBackup') || 'Ready to backup/restore'}</p>
                   </div>
                 </div>
-                <button 
-                  onClick={onConnectGoogle}
-                  className="text-xs text-slate-400 hover:text-slate-600 underline"
-                >
-                  {t('reconnect') || 'Reconnect'}
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                  <button 
+                    onClick={onConnectGoogle}
+                    className="text-[10px] text-blue-500 hover:text-blue-700 underline"
+                  >
+                    {t('reconnect') || 'Reconnect'}
+                  </button>
+                  <button 
+                    onClick={onDisconnectGoogle}
+                    className="text-[10px] text-rose-500 hover:text-rose-700 underline"
+                  >
+                    {t('disconnect') || 'Disconnect'}
+                  </button>
+                </div>
               </div>
               <button 
                 onClick={onBackupToDrive}
@@ -8093,9 +8103,13 @@ export default function App() {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
-        const tokens = event.data.tokens;
-        setGoogleTokens(tokens);
-        localStorage.setItem('google_tokens', JSON.stringify(tokens));
+        const newTokens = event.data.tokens;
+        setGoogleTokens((prev: any) => {
+          // Merge tokens to preserve refresh_token if it's missing in the new ones
+          const merged = { ...prev, ...newTokens };
+          localStorage.setItem('google_tokens', JSON.stringify(merged));
+          return merged;
+        });
       }
     };
     window.addEventListener('message', handleMessage);
@@ -8203,6 +8217,12 @@ export default function App() {
       console.error('Restore failed:', error);
       alert('Restore failed: ' + error.message);
     }
+  };
+
+  const handleDisconnectGoogle = () => {
+    setGoogleTokens(null);
+    localStorage.removeItem('google_tokens');
+    alert('Google Drive disconnected.');
   };
 
   const [language, setLanguage] = useState<Language>(() => {
@@ -8707,7 +8727,12 @@ export default function App() {
   if (!session) {
     return (
       <LanguageContext.Provider value={contextValue}>
-        <AuthView onSuccess={() => {}} />
+        <AuthView onSuccess={(isNewUser) => {
+          if (!isNewUser) {
+            setOnboardingComplete(true);
+            localStorage.setItem('onboarding_complete', 'true');
+          }
+        }} />
       </LanguageContext.Provider>
     );
   }
@@ -8890,6 +8915,7 @@ export default function App() {
                     onConnectGoogle={handleConnectGoogle}
                     onBackupToDrive={handleBackupToDrive}
                     onRestoreFromDrive={handleRestoreFromDrive}
+                    onDisconnectGoogle={handleDisconnectGoogle}
                     googleTokens={googleTokens}
                   />
                 ) : activeTab === 'editHome' ? (
