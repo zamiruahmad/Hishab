@@ -8113,13 +8113,20 @@ export default function App() {
   };
 
   const handleBackupToDrive = async () => {
-    if (!googleTokens) return;
+    console.log('Initiating backup to Drive...');
+    if (!googleTokens) {
+      console.warn('Backup aborted: No Google tokens found.');
+      alert('Please connect your Google Drive first.');
+      return;
+    }
     
     const backupData = {
       transactions,
       managementData,
       onboarding: JSON.parse(localStorage.getItem('onboarding_data') || '{}')
     };
+
+    console.log('Backup data prepared, sending to server...');
 
     try {
       const response = await fetch('/api/drive/backup', {
@@ -8131,11 +8138,19 @@ export default function App() {
           fileName: `finance_backup_${session?.user?.id || 'default'}.json`
         })
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server responded with ${response.status}: ${errorText}`);
+      }
+
       const result = await response.json();
+      console.log('Backup server response:', result);
+
       if (result.success) {
         alert('Backup successful!');
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || 'Unknown server error');
       }
     } catch (error: any) {
       console.error('Backup failed:', error);
@@ -8144,7 +8159,12 @@ export default function App() {
   };
 
   const handleRestoreFromDrive = async () => {
-    if (!googleTokens) return;
+    console.log('Initiating restore from Drive...');
+    if (!googleTokens) {
+      console.warn('Restore aborted: No Google tokens found.');
+      alert('Please connect your Google Drive first.');
+      return;
+    }
 
     try {
       const response = await fetch('/api/drive/restore', {
@@ -8155,7 +8175,15 @@ export default function App() {
           fileName: `finance_backup_${session?.user?.id || 'default'}.json`
         })
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server responded with ${response.status}: ${errorText}`);
+      }
+
       const result = await response.json();
+      console.log('Restore server response:', result);
+
       if (result.data) {
         const data = result.data;
         if (data.transactions) setTransactions(data.transactions);
@@ -8169,7 +8197,7 @@ export default function App() {
         }
         alert('Restore successful!');
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || 'No backup data found or unknown error');
       }
     } catch (error: any) {
       console.error('Restore failed:', error);
