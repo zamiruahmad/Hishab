@@ -19,7 +19,7 @@ async function startServer() {
   const oauth2Client = new google.auth.OAuth2(
     process.env.VITE_GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI || `${process.env.APP_URL}/auth/google/callback`
+    process.env.GOOGLE_REDIRECT_URI || `https://ais-dev-4jn34g6oe7w4gngyrdg7pj-712773840993.asia-southeast1.run.app/auth/google/callback`
   );
 
   // --- API Routes ---
