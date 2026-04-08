@@ -8021,6 +8021,17 @@ export default function App() {
     console.log('Supabase URL loaded:', import.meta.env.VITE_SUPABASE_URL ? 'Yes' : 'No');
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) {
+        // Fetch profile if session exists
+        supabase.from('user_settings').select('*').eq('id', session.user.id).single().then(({ data, error }) => {
+          if (data && !error) {
+            setProfileName(data.name);
+            setProfileImage(data.profile_image);
+            setOnboardingComplete(true);
+            localStorage.setItem('onboarding_complete', 'true');
+          }
+        });
+      }
       setIsAuthChecking(false);
     });
 
@@ -8028,6 +8039,16 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session) {
+        supabase.from('user_settings').select('*').eq('id', session.user.id).single().then(({ data, error }) => {
+          if (data && !error) {
+            setProfileName(data.name);
+            setProfileImage(data.profile_image);
+            setOnboardingComplete(true);
+            localStorage.setItem('onboarding_complete', 'true');
+          }
+        });
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -8642,6 +8663,8 @@ export default function App() {
     localStorage.removeItem('appWidgetEnabled');
     localStorage.removeItem('appFloatingBubbleEnabled');
     localStorage.removeItem('profileName');
+    localStorage.removeItem('google_tokens');
+    setGoogleTokens(null);
     window.location.reload();
   }, []);
 
