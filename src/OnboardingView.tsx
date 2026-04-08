@@ -12,7 +12,9 @@ import {
   GraduationCap,
   User,
   Laptop,
-  Camera
+  Camera,
+  Sparkles,
+  Globe
 } from 'lucide-react';
 import { cn } from './utils';
 import { Currency } from './types';
@@ -31,7 +33,7 @@ interface OnboardingViewProps {
 
 export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
   const [step, setStep] = useState(1);
-  const totalSteps = 6;
+  const totalSteps = 5; // Reduced from 6 since auth is handled first
 
   // State for data
   const [language, setLanguage] = useState('bn');
@@ -101,75 +103,87 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
   ];
 
   return (
-    <div className="fixed inset-0 bg-white z-[999] flex flex-col">
+    <div className="fixed inset-0 bg-slate-50 z-[999] flex flex-col overflow-hidden">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-emerald-400/10 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/10 blur-[120px] pointer-events-none" />
+
       {/* Progress Bar */}
-      <div className="h-1 bg-slate-100 w-full">
+      <div className="h-1.5 bg-slate-200/50 w-full relative z-20">
         <motion.div 
-          className="h-full bg-emerald-500"
+          className="h-full bg-emerald-500 rounded-r-full"
           initial={{ width: 0 }}
           animate={{ width: `${(step / totalSteps) * 100}%` }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
         />
       </div>
 
       {/* Header */}
       {step > 1 && (
-        <div className="px-6 py-4 flex items-center">
-          <button onClick={handleBack} className="p-2 -ml-2 text-slate-400 hover:text-slate-900 transition-colors">
-            <ArrowLeft size={24} />
+        <div className="px-6 py-4 flex items-center relative z-20">
+          <button 
+            onClick={handleBack} 
+            className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-600 shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
+          >
+            <ArrowLeft size={20} />
           </button>
         </div>
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 pb-24 flex flex-col">
+      <div className="flex-1 overflow-y-auto px-6 pb-32 flex flex-col relative z-10">
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.div 
               key="step1"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex flex-col justify-center"
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.4 }}
+              className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full"
             >
-              <div className="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center mb-8">
-                <Wallet size={40} className="text-emerald-500" />
+              <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-[2rem] flex items-center justify-center mb-8 shadow-xl shadow-emerald-500/30 rotate-3 mx-auto">
+                <Globe size={48} className="text-white -rotate-3" />
               </div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">Welcome / স্বাগতম</h2>
-              <p className="text-slate-500 mb-8">Choose your preferred language / আপনার পছন্দের ভাষা নির্বাচন করুন</p>
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">Welcome / স্বাগতম</h2>
+                <p className="text-slate-500 text-lg">Choose your preferred language<br/>আপনার পছন্দের ভাষা নির্বাচন করুন</p>
+              </div>
               
               <div className="space-y-4">
                 <button
                   onClick={() => setLanguage('bn')}
                   className={cn(
-                    "w-full flex items-center justify-between p-5 rounded-2xl border-2 transition-all",
+                    "w-full flex items-center justify-between p-6 rounded-[1.5rem] border-2 transition-all duration-300",
                     language === 'bn' 
-                      ? "border-emerald-500 bg-emerald-50" 
-                      : "border-slate-100 bg-white hover:border-emerald-200"
+                      ? "border-emerald-500 bg-emerald-50/50 shadow-md shadow-emerald-500/10" 
+                      : "border-white bg-white shadow-sm hover:border-emerald-200"
                   )}
                 >
-                  <span className="text-xl font-medium text-slate-900">বাংলা</span>
-                  {language === 'bn' && (
-                    <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white">
-                      <Check size={14} />
-                    </div>
-                  )}
+                  <span className="text-xl font-bold text-slate-900">বাংলা</span>
+                  <div className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+                    language === 'bn' ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-300"
+                  )}>
+                    <Check size={16} strokeWidth={3} />
+                  </div>
                 </button>
                 <button
                   onClick={() => setLanguage('en')}
                   className={cn(
-                    "w-full flex items-center justify-between p-5 rounded-2xl border-2 transition-all",
+                    "w-full flex items-center justify-between p-6 rounded-[1.5rem] border-2 transition-all duration-300",
                     language === 'en' 
-                      ? "border-emerald-500 bg-emerald-50" 
-                      : "border-slate-100 bg-white hover:border-emerald-200"
+                      ? "border-emerald-500 bg-emerald-50/50 shadow-md shadow-emerald-500/10" 
+                      : "border-white bg-white shadow-sm hover:border-emerald-200"
                   )}
                 >
-                  <span className="text-xl font-medium text-slate-900">English</span>
-                  {language === 'en' && (
-                    <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white">
-                      <Check size={14} />
-                    </div>
-                  )}
+                  <span className="text-xl font-bold text-slate-900">English</span>
+                  <div className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+                    language === 'en' ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-300"
+                  )}>
+                    <Check size={16} strokeWidth={3} />
+                  </div>
                 </button>
               </div>
             </motion.div>
@@ -178,15 +192,21 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
           {step === 2 && (
             <motion.div 
               key="step2"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex flex-col justify-center"
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.4 }}
+              className="flex-1 flex flex-col pt-12 max-w-md mx-auto w-full"
             >
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('আপনার পেশা কী?', 'What is your occupation?')}</h2>
-              <p className="text-slate-500 mb-8">{t('এটি আমাদের অ্যাপটিকে আপনার জন্য কাস্টমাইজ করতে সাহায্য করবে', 'This helps us customize the app for you')}</p>
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl mb-6">
+                  <Briefcase size={32} />
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">{t('আপনার পেশা কী?', 'What is your occupation?')}</h2>
+                <p className="text-slate-500 text-lg">{t('এটি আমাদের অ্যাপটিকে আপনার জন্য কাস্টমাইজ করতে সাহায্য করবে', 'This helps us customize the app for you')}</p>
+              </div>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 {occupations.map((occ) => {
                   const Icon = occ.icon;
                   return (
@@ -194,14 +214,14 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
                       key={occ.id}
                       onClick={() => setOccupation(occ.id)}
                       className={cn(
-                        "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-3",
+                        "flex flex-col items-center justify-center p-6 rounded-[1.5rem] border-2 transition-all duration-300 gap-4",
                         occupation === occ.id 
-                          ? "border-emerald-500 bg-emerald-50 text-emerald-700" 
-                          : "border-slate-100 bg-white text-slate-600 hover:border-emerald-200"
+                          ? "border-blue-500 bg-blue-50/50 text-blue-700 shadow-md shadow-blue-500/10" 
+                          : "border-white bg-white text-slate-600 shadow-sm hover:border-blue-200"
                       )}
                     >
-                      <Icon size={28} />
-                      <span className="font-medium">{occ.name}</span>
+                      <Icon size={32} strokeWidth={1.5} />
+                      <span className="font-bold">{occ.name}</span>
                     </button>
                   );
                 })}
@@ -212,27 +232,31 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
           {step === 3 && (
             <motion.div 
               key="step3"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex flex-col justify-center items-center text-center"
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.4 }}
+              className="flex-1 flex flex-col justify-center items-center text-center max-w-md mx-auto w-full"
             >
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('আপনার প্রোফাইল', 'Your Profile')}</h2>
-              <p className="text-slate-500 mb-8">{t('আপনার নাম ও ছবি যোগ করুন', 'Add your name and photo')}</p>
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 text-purple-600 rounded-2xl mb-6">
+                <Sparkles size={32} />
+              </div>
+              <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">{t('আপনার প্রোফাইল', 'Your Profile')}</h2>
+              <p className="text-slate-500 text-lg mb-10">{t('আপনার নাম ও ছবি যোগ করুন', 'Add your name and photo')}</p>
               
-              <div className="relative mb-8 group">
-                <div className="w-28 h-28 rounded-full bg-slate-100 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center relative">
+              <div className="relative mb-10 group">
+                <div className="w-32 h-32 rounded-[2.5rem] bg-white border-4 border-white shadow-xl overflow-hidden flex items-center justify-center relative transition-transform duration-300 group-hover:scale-105">
                   {profileImage ? (
                     <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <User size={48} className="text-slate-300" />
+                    <User size={56} className="text-slate-300" />
                   )}
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                    <Camera size={24} className="text-white" />
+                  <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-sm">
+                    <Camera size={28} className="text-white" />
                   </div>
                 </div>
-                <button className="absolute bottom-0 right-0 w-8 h-8 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center text-white shadow-sm pointer-events-none">
-                  <Plus size={16} />
+                <button className="absolute -bottom-2 -right-2 w-10 h-10 bg-purple-500 rounded-full border-4 border-slate-50 flex items-center justify-center text-white shadow-lg pointer-events-none">
+                  <Plus size={20} strokeWidth={3} />
                 </button>
                 <input 
                   type="file" 
@@ -242,43 +266,51 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
                 />
               </div>
 
-              <input 
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t('আপনার নাম লিখুন', 'Enter your name')}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-lg font-medium focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-center"
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && name.trim() && handleNext()}
-              />
+              <div className="w-full relative">
+                <input 
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t('আপনার নাম লিখুন', 'Enter your name')}
+                  className="w-full bg-white border-2 border-transparent rounded-[1.5rem] px-6 py-5 text-xl font-bold text-slate-900 focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all text-center shadow-sm placeholder:text-slate-400 placeholder:font-medium"
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && name.trim() && handleNext()}
+                />
+              </div>
             </motion.div>
           )}
 
           {step === 4 && (
             <motion.div 
               key="step4"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex flex-col justify-center"
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.4 }}
+              className="flex-1 flex flex-col pt-12 max-w-md mx-auto w-full"
             >
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('মুদ্রা নির্বাচন করুন', 'Select Currency')}</h2>
-              <p className="text-slate-500 mb-8">{t('আপনি কোন মুদ্রায় হিসাব রাখতে চান?', 'Which currency do you want to use?')}</p>
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl mb-6">
+                  <Wallet size={32} />
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">{t('মুদ্রা নির্বাচন করুন', 'Select Currency')}</h2>
+                <p className="text-slate-500 text-lg">{t('আপনি কোন মুদ্রায় হিসাব রাখতে চান?', 'Which currency do you want to use?')}</p>
+              </div>
               
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {CURRENCIES.map((c) => (
                   <button
                     key={c.code}
                     onClick={() => setCurrency(c)}
                     className={cn(
-                      "w-full flex items-center justify-between p-4 rounded-xl border transition-all",
+                      "w-full flex items-center justify-between p-5 rounded-[1.5rem] border-2 transition-all duration-300",
                       currency.code === c.code 
-                        ? "border-emerald-500 bg-emerald-50 shadow-sm" 
-                        : "border-slate-200 bg-white hover:bg-slate-50"
+                        ? "border-amber-500 bg-amber-50/50 shadow-md shadow-amber-500/10" 
+                        : "border-white bg-white hover:border-amber-200 shadow-sm"
                     )}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 shrink-0">
+                    <div className="flex items-center gap-5">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-slate-100 shrink-0 shadow-sm">
                         <img 
                           src={`https://flagcdn.com/w40/${c.flagCode}.png`} 
                           alt={c.country}
@@ -287,15 +319,16 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
                         />
                       </div>
                       <div className="text-left">
-                        <p className="font-medium text-slate-900">{c.name}</p>
-                        <p className="text-sm text-slate-500">{c.code} ({c.symbol})</p>
+                        <p className="font-bold text-slate-900 text-lg">{c.name}</p>
+                        <p className="font-medium text-slate-500">{c.code} ({c.symbol})</p>
                       </div>
                     </div>
-                    {currency.code === c.code && (
-                      <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white">
-                        <Check size={14} />
-                      </div>
-                    )}
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+                      currency.code === c.code ? "bg-amber-500 text-white" : "bg-slate-100 text-slate-300"
+                    )}>
+                      <Check size={16} strokeWidth={3} />
+                    </div>
                   </button>
                 ))}
               </div>
@@ -305,39 +338,45 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
           {step === 5 && (
             <motion.div 
               key="step5"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex flex-col pt-8"
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.4 }}
+              className="flex-1 flex flex-col pt-12 max-w-md mx-auto w-full"
             >
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('অ্যাকাউন্ট যোগ করুন', 'Add Accounts')}</h2>
-              <p className="text-slate-500 mb-8">{t('আপনার অ্যাকাউন্টগুলোর নাম ও ব্যালেন্স সেট করুন', 'Set up your accounts and initial balances')}</p>
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl mb-6">
+                  <Building2 size={32} />
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">{t('অ্যাকাউন্ট যোগ করুন', 'Add Accounts')}</h2>
+                <p className="text-slate-500 text-lg">{t('আপনার অ্যাকাউন্টগুলোর নাম ও ব্যালেন্স সেট করুন', 'Set up your accounts and initial balances')}</p>
+              </div>
               
               <div className="space-y-4">
                 {accounts.map((acc) => {
                   const Icon = acc.icon === 'Wallet' ? Wallet : acc.icon === 'Building2' ? Building2 : Smartphone;
                   return (
-                    <div key={acc.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${acc.color}15`, color: acc.color }}>
-                          <Icon size={20} />
+                    <div key={acc.id} className="bg-white border-2 border-white rounded-[1.5rem] p-5 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-4 mb-5">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${acc.color}15`, color: acc.color }}>
+                          <Icon size={24} />
                         </div>
                         <input 
                           type="text"
                           value={acc.name}
                           onChange={(e) => handleAccountChange(acc.id, 'name', e.target.value)}
-                          className="font-medium text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-emerald-500 outline-none px-1 py-0.5 transition-colors w-full"
+                          className="font-bold text-lg text-slate-900 bg-transparent border-b-2 border-transparent hover:border-slate-200 focus:border-emerald-500 outline-none px-1 py-1 transition-colors w-full"
                           placeholder={t('অ্যাকাউন্টের নাম', 'Account Name')}
                         />
                       </div>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">{currency.symbol}</span>
+                        <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">{currency.symbol}</span>
                         <input 
                           type="number"
                           value={acc.balance || ''}
                           onChange={(e) => handleAccountChange(acc.id, 'balance', parseFloat(e.target.value) || 0)}
                           placeholder="0.00"
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-3 font-medium focus:ring-2 focus:ring-emerald-500 outline-none"
+                          className="w-full bg-slate-50 border-2 border-transparent rounded-xl pl-12 pr-5 py-4 font-bold text-lg text-slate-900 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
                         />
                       </div>
                     </div>
@@ -346,51 +385,10 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
                 
                 <button 
                   onClick={handleAddAccount}
-                  className="w-full py-4 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 font-medium hover:border-emerald-500 hover:text-emerald-600 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-5 border-2 border-dashed border-slate-300 rounded-[1.5rem] text-slate-500 font-bold hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50/50 transition-all flex items-center justify-center gap-2"
                 >
-                  <Plus size={20} />
+                  <Plus size={24} />
                   {t('নতুন অ্যাকাউন্ট যোগ করুন', 'Add New Account')}
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {step === 6 && (
-            <motion.div 
-              key="step6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex flex-col items-center justify-center text-center"
-            >
-              <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-                <Check size={40} className="text-blue-500" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('সবকিছু প্রস্তুত!', 'Everything is ready!')}</h2>
-              <p className="text-slate-500 mb-12">{t('আপনার ডেটা সুরক্ষিত রাখতে লগইন করুন', 'Login to keep your data secure')}</p>
-              
-              <div className="w-full space-y-3">
-                <button 
-                  onClick={() => {
-                    window.location.href = '/login';
-                  }}
-                  className="w-full bg-blue-600 text-white rounded-xl py-4 font-medium text-lg hover:bg-blue-700 transition-colors"
-                >
-                  {t('পহেলা ID দিয়ে লগইন করুন', 'Login with Pohela ID')}
-                </button>
-                <button 
-                  onClick={() => {
-                    window.location.href = '/register';
-                  }}
-                  className="w-full bg-slate-100 text-slate-900 rounded-xl py-4 font-medium text-lg hover:bg-slate-200 transition-colors"
-                >
-                  {t('নতুন পহেলা ID তৈরি করুন', 'Create new Pohela ID')}
-                </button>
-                <button 
-                  onClick={handleNext}
-                  className="w-full bg-emerald-50 text-emerald-700 rounded-xl py-4 font-medium text-lg hover:bg-emerald-100 transition-colors"
-                >
-                  {t('গেস্ট হিসেবে চালিয়ে যান', 'Continue as Guest')}
                 </button>
               </div>
             </motion.div>
@@ -399,17 +397,18 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
       </div>
 
       {/* Footer Actions */}
-      {step < 6 && (
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-slate-100">
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-xl border-t border-white z-50">
+        <div className="max-w-md mx-auto">
           <button 
             onClick={handleNext}
             disabled={(step === 2 && !occupation) || (step === 3 && !name.trim())}
-            className="w-full bg-emerald-500 text-white rounded-xl py-4 font-medium text-lg shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+            className="w-full bg-slate-900 text-white rounded-[1.5rem] py-5 font-bold text-lg shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2 active:scale-[0.98]"
           >
-            {t('পরবর্তী ধাপ', 'Next Step')} <ArrowRight size={20} />
+            {step === totalSteps ? t('শুরু করুন', 'Get Started') : t('পরবর্তী ধাপ', 'Next Step')} 
+            {step !== totalSteps && <ArrowRight size={20} />}
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 };

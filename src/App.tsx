@@ -8676,6 +8676,14 @@ export default function App() {
     );
   }
 
+  if (!session) {
+    return (
+      <LanguageContext.Provider value={contextValue}>
+        <AuthView onSuccess={() => {}} />
+      </LanguageContext.Provider>
+    );
+  }
+
   if (!onboardingComplete) {
     return (
       <LanguageContext.Provider value={contextValue}>
@@ -8702,14 +8710,6 @@ export default function App() {
             }} />
           </div>
         </div>
-      </LanguageContext.Provider>
-    );
-  }
-
-  if (!session) {
-    return (
-      <LanguageContext.Provider value={contextValue}>
-        <AuthView onSuccess={() => {}} />
       </LanguageContext.Provider>
     );
   }

@@ -16,23 +16,39 @@ async function startServer() {
 
   app.use(express.json());
 
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.VITE_GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI || `https://ais-dev-4jn34g6oe7w4gngyrdg7pj-712773840993.asia-southeast1.run.app/auth/google/callback`
-  );
-
   // --- API Routes ---
 
   // 1. Get Google Auth URL
   app.get('/api/auth/google/url', (req, res) => {
+    const origin = req.headers.referer || req.headers.origin;
+    console.log('Auth request from origin:', origin);
+
+    // If GOOGLE_REDIRECT_URI is not set, try to guess it from the referer
+    let currentRedirectUri = process.env.GOOGLE_REDIRECT_URI;
+    if (!currentRedirectUri && origin) {
+      try {
+        const url = new URL(origin);
+        currentRedirectUri = `${url.protocol}//${url.host}/auth/google/callback`;
+        console.log('Guessed redirect URI:', currentRedirectUri);
+      } catch (e) {
+        console.error('Error parsing origin for redirect URI:', e);
+      }
+    }
+
+    // Update the client's redirect URI for this request
+    const client = new google.auth.OAuth2(
+      process.env.VITE_GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      currentRedirectUri || `https://ais-dev-4jn34g6oe7w4gngyrdg7pj-712773840993.asia-southeast1.run.app/auth/google/callback`
+    );
+
     const scopes = [
       'https://www.googleapis.com/auth/drive.file',
       'https://www.googleapis.com/auth/userinfo.profile',
       'https://www.googleapis.com/auth/userinfo.email'
     ];
 
-    const url = oauth2Client.generateAuthUrl({
+    const url = client.generateAuthUrl({
       access_type: 'offline',
       scope: scopes,
       prompt: 'consent'
@@ -44,13 +60,24 @@ async function startServer() {
   // 2. Google Auth Callback
   app.get(['/auth/google/callback', '/auth/google/callback/'], async (req, res) => {
     const { code } = req.query;
+    const host = req.headers.host;
+    const protocol = req.protocol;
+    const currentRedirectUri = process.env.GOOGLE_REDIRECT_URI || `${protocol}://${host}/auth/google/callback`;
+
+    console.log('Callback received. Host:', host, 'Redirect URI used:', currentRedirectUri);
 
     if (!code) {
       return res.status(400).send('No code provided');
     }
 
     try {
-      const { tokens } = await oauth2Client.getToken(code as string);
+      const client = new google.auth.OAuth2(
+        process.env.VITE_GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        currentRedirectUri
+      );
+
+      const { tokens } = await client.getToken(code as string);
       
       // Send tokens back to client via postMessage and close popup
       res.send(`
@@ -71,9 +98,9 @@ async function startServer() {
           </body>
         </html>
       `);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error exchanging code for tokens:', error);
-      res.status(500).send('Authentication failed');
+      res.status(500).send(`Authentication failed: ${error.message}`);
     }
   });
 
@@ -86,8 +113,12 @@ async function startServer() {
     }
 
     try {
-      oauth2Client.setCredentials(tokens);
-      const drive = google.drive({ version: 'v3', auth: oauth2Client });
+      const client = new google.auth.OAuth2(
+        process.env.VITE_GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET
+      );
+      client.setCredentials(tokens);
+      const drive = google.drive({ version: 'v3', auth: client });
 
       // Check if file already exists
       const listResponse = await drive.files.list({
@@ -139,8 +170,12 @@ async function startServer() {
     }
 
     try {
-      oauth2Client.setCredentials(tokens);
-      const drive = google.drive({ version: 'v3', auth: oauth2Client });
+      const client = new google.auth.OAuth2(
+        process.env.VITE_GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET
+      );
+      client.setCredentials(tokens);
+      const drive = google.drive({ version: 'v3', auth: client });
 
       const listResponse = await drive.files.list({
         q: `name = '${fileName || 'backup.json'}' and trashed = false`,

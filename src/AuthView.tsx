@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { Mail, Lock, Loader2, AlertCircle, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Mail, Lock, Loader2, AlertCircle, Check, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 interface AuthViewProps {
@@ -54,99 +54,135 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-400/20 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 blur-[100px] pointer-events-none" />
+
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100"
+        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+        className="w-full max-w-md relative z-10"
       >
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
-            <Lock size={32} />
+        {/* Logo / Icon */}
+        <div className="flex justify-center mb-8">
+          <div className="relative">
+            <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/30 rotate-3">
+              <ShieldCheck size={40} className="text-white -rotate-3" />
+            </div>
+            <div className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md animate-bounce" style={{ animationDuration: '3s' }}>
+              <Sparkles size={16} className="text-amber-400" />
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            {isLogin ? 'Welcome Back' : 'Create Account'}
-          </h1>
-          <p className="text-slate-500 mt-2">
-            {isLogin ? 'Sign in to access your account' : 'Sign up to get started'}
-          </p>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3 text-rose-600">
-            <AlertCircle size={20} className="shrink-0 mt-0.5" />
-            <p className="text-sm">{error}</p>
-          </div>
-        )}
-
-        {message && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-3 text-emerald-600">
-            <Check size={20} className="shrink-0 mt-0.5" />
-            <p className="text-sm">{message}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleAuth} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                <Mail size={20} />
-              </div>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
+        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl border border-white/50">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
+              {isLogin ? 'Welcome Back' : 'Create Account'}
+            </h1>
+            <p className="text-slate-500">
+              {isLogin ? 'Enter your details to access your account' : 'Start managing your finances today'}
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                <Lock size={20} />
-              </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-                placeholder="••••••••"
-                required
-                minLength={6}
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
-          >
-            {loading ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <span>{isLogin ? 'Sign In' : 'Sign Up'}</span>
+          <AnimatePresence mode="wait">
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-6 overflow-hidden"
+              >
+                <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-3 text-rose-600">
+                  <AlertCircle size={20} className="shrink-0 mt-0.5" />
+                  <p className="text-sm font-medium">{error}</p>
+                </div>
+              </motion.div>
             )}
-          </button>
-        </form>
 
-        <div className="mt-8 text-center">
-          <p className="text-slate-500 text-sm">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            {message && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-6 overflow-hidden"
+              >
+                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3 text-emerald-600">
+                  <Check size={20} className="shrink-0 mt-0.5" />
+                  <p className="text-sm font-medium">{message}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <form onSubmit={handleAuth} className="space-y-5">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Email Address</label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                  <Mail size={20} />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white outline-none transition-all font-medium text-slate-900 placeholder:text-slate-400"
+                  placeholder="name@example.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Password</label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                  <Lock size={20} />
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white outline-none transition-all font-medium text-slate-900 placeholder:text-slate-400"
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
+                />
+              </div>
+            </div>
+
             <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-emerald-600 font-medium hover:underline"
+              type="submit"
+              disabled={loading}
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-4 rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:scale-100 active:scale-[0.98] mt-2 shadow-lg shadow-slate-900/20"
             >
-              {isLogin ? 'Sign up' : 'Sign in'}
+              {loading ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <>
+                  <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                  <ArrowRight size={18} />
+                </>
+              )}
             </button>
-          </p>
+          </form>
+
+          <div className="mt-8 text-center">
+            <p className="text-slate-500 text-sm font-medium">
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <button
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-emerald-600 font-bold hover:text-emerald-700 transition-colors"
+              >
+                {isLogin ? 'Sign up now' : 'Sign in instead'}
+              </button>
+            </p>
+          </div>
         </div>
       </motion.div>
     </div>
   );
 };
+
