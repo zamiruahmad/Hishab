@@ -90,7 +90,9 @@ import {
   CircleUserRound,
   Tags,
   LogOut,
-  Camera
+  Camera,
+  RefreshCw,
+  Wifi
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'motion/react';
 import { 
@@ -113,6 +115,43 @@ import { AuthView } from './AuthView';
 import { supabase } from './supabaseClient';
 import { Currency, Language, Transaction } from './types';
 import { CURRENCIES } from './constants';
+
+// --- Utility Functions ---
+const compressImage = (file: File, maxWidth = 800, maxHeight = 800, quality = 0.7): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = (error) => reject(error);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
 
 // Force reset for new onboarding experience
 if (typeof window !== 'undefined' && localStorage.getItem('app_version') !== '3') {
@@ -4548,14 +4587,15 @@ const ProfileView = React.memo(({ transactions, managementData, onClose }: { tra
     setIsEditingName(false);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressedBase64 = await compressImage(file);
+        setProfileImage(compressedBase64);
+      } catch (error) {
+        console.error('Error compressing image:', error);
+      }
     }
   };
 
@@ -5231,7 +5271,11 @@ const SettingsView = React.memo(({
   onBackupToDrive,
   onRestoreFromDrive,
   onDisconnectGoogle,
-  googleTokens
+  googleTokens,
+  autoBackup,
+  setAutoBackup,
+  backupNetwork,
+  setBackupNetwork
 }: { 
   onOpenWorkspace: (id: string) => void, 
   onOpenDetail: (label: string) => void,
@@ -5256,7 +5300,11 @@ const SettingsView = React.memo(({
   onBackupToDrive: () => void,
   onRestoreFromDrive: () => void,
   onDisconnectGoogle: () => void,
-  googleTokens: any
+  googleTokens: any,
+  autoBackup: string,
+  setAutoBackup: (val: string) => void,
+  backupNetwork: string,
+  setBackupNetwork: (val: string) => void
 }) => {
   const [privacyMode, setPrivacyMode] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
@@ -5353,6 +5401,51 @@ const SettingsView = React.memo(({
                 </div>
                 <ChevronRight size={16} className="text-slate-400" />
               </button>
+
+              <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-[0.85rem] bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-indigo-500">
+                    <RefreshCw size={20} />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-slate-900 font-medium text-sm">Auto Backup</h4>
+                    <p className="text-slate-500 text-xs">Frequency of automatic backups</p>
+                  </div>
+                </div>
+                <select 
+                  value={autoBackup}
+                  onChange={(e) => setAutoBackup(e.target.value)}
+                  className="bg-slate-100 text-slate-700 text-sm rounded-lg px-3 py-1.5 border-none outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="off">Off</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+
+              {autoBackup !== 'off' && (
+                <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-[0.85rem] bg-cyan-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-cyan-500">
+                      <Wifi size={20} />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="text-slate-900 font-medium text-sm">Network Preference</h4>
+                      <p className="text-slate-500 text-xs">When to perform auto backups</p>
+                    </div>
+                  </div>
+                  <select 
+                    value={backupNetwork}
+                    onChange={(e) => setBackupNetwork(e.target.value)}
+                    className="bg-slate-100 text-slate-700 text-sm rounded-lg px-3 py-1.5 border-none outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="wifi">Wi-Fi Only</option>
+                    <option value="any">Wi-Fi & Data</option>
+                  </select>
+                </div>
+              )}
+
               <button 
                 onClick={onRestoreFromDrive}
                 className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
@@ -6489,14 +6582,15 @@ const AddTransactionView = React.memo(({
     onBack();
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setReceipt(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressedBase64 = await compressImage(file);
+        setReceipt(compressedBase64);
+      } catch (error) {
+        console.error('Error compressing image:', error);
+      }
     }
   };
 
@@ -8026,6 +8120,17 @@ const GlobalSearchView = React.memo(({
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [isProfileLoaded, setIsProfileLoaded] = useState(false);
+
+  const [profileName, setProfileName] = useState<string>(() => {
+    return localStorage.getItem('profileName') || '';
+  });
+  const [profileEmail, setProfileEmail] = useState<string>(() => {
+    return localStorage.getItem('profileEmail') || '';
+  });
+  const [profileImage, setProfileImage] = useState<string>(() => {
+    return localStorage.getItem('profileImage') || '';
+  });
 
   useEffect(() => {
     console.log('Supabase URL loaded:', import.meta.env.VITE_SUPABASE_URL ? 'Yes' : 'No');
@@ -8035,12 +8140,15 @@ export default function App() {
         // Fetch profile if session exists
         supabase.from('user_settings').select('*').eq('id', session.user.id).single().then(({ data, error }) => {
           if (data && !error) {
-            setProfileName(data.name);
-            setProfileImage(data.profile_image);
+            if (data.name) setProfileName(data.name);
+            if (data.profile_image) setProfileImage(data.profile_image);
             setOnboardingComplete(true);
             localStorage.setItem('onboarding_complete', 'true');
           }
+          setIsProfileLoaded(true);
         });
+      } else {
+        setIsProfileLoaded(true);
       }
       setIsAuthChecking(false);
     });
@@ -8052,12 +8160,15 @@ export default function App() {
       if (session) {
         supabase.from('user_settings').select('*').eq('id', session.user.id).single().then(({ data, error }) => {
           if (data && !error) {
-            setProfileName(data.name);
-            setProfileImage(data.profile_image);
+            if (data.name) setProfileName(data.name);
+            if (data.profile_image) setProfileImage(data.profile_image);
             setOnboardingComplete(true);
             localStorage.setItem('onboarding_complete', 'true');
           }
+          setIsProfileLoaded(true);
         });
+      } else {
+        setIsProfileLoaded(true);
       }
     });
 
@@ -8075,29 +8186,22 @@ export default function App() {
   });
 
   useEffect(() => {
-    if (session && onboardingComplete) {
-      // Sync ONLY profile info to Supabase
-      const savedData = localStorage.getItem('onboarding_data');
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        supabase.from('user_settings').upsert([
-          {
-            id: session.user.id,
-            name: data.name,
-            profile_image: data.profileImage,
-            updated_at: new Date().toISOString()
-          }
-        ]).then(({ error }) => {
-          if (!error) {
-            // We keep onboarding_data for local use but we don't sync the rest to Supabase
-            // localStorage.removeItem('onboarding_data'); 
-          } else {
-            console.error('Error syncing profile to Supabase:', error);
-          }
-        });
-      }
+    if (session && isProfileLoaded && onboardingComplete) {
+      // Sync profile info to Supabase whenever it changes
+      supabase.from('user_settings').upsert([
+        {
+          id: session.user.id,
+          name: profileName,
+          profile_image: profileImage,
+          updated_at: new Date().toISOString()
+        }
+      ]).then(({ error }) => {
+        if (error) {
+          console.error('Error syncing profile to Supabase:', error);
+        }
+      });
     }
-  }, [session, onboardingComplete]);
+  }, [session, isProfileLoaded, onboardingComplete, profileName, profileImage]);
 
   // Google OAuth Listener
   useEffect(() => {
@@ -8126,11 +8230,11 @@ export default function App() {
     }
   };
 
-  const handleBackupToDrive = async () => {
+  const handleBackupToDrive = async (silent = false) => {
     console.log('Initiating backup to Drive...');
     if (!googleTokens) {
       console.warn('Backup aborted: No Google tokens found.');
-      alert('Please connect your Google Drive first.');
+      if (!silent) alert('Please connect your Google Drive first.');
       return;
     }
     
@@ -8162,13 +8266,13 @@ export default function App() {
       console.log('Backup server response:', result);
 
       if (result.success) {
-        alert('Backup successful!');
+        if (!silent) alert('Backup successful!');
       } else {
         throw new Error(result.error || 'Unknown server error');
       }
     } catch (error: any) {
       console.error('Backup failed:', error);
-      alert('Backup failed: ' + error.message);
+      if (!silent) alert('Backup failed: ' + error.message);
     }
   };
 
@@ -8261,15 +8365,62 @@ export default function App() {
     return saved ? JSON.parse(saved) : false;
   });
 
-  const [profileName, setProfileName] = useState<string>(() => {
-    return localStorage.getItem('profileName') || '';
+  const [autoBackup, setAutoBackup] = useState<string>(() => {
+    return localStorage.getItem('appAutoBackup') || 'off';
   });
-  const [profileEmail, setProfileEmail] = useState<string>(() => {
-    return localStorage.getItem('profileEmail') || '';
+
+  const [backupNetwork, setBackupNetwork] = useState<string>(() => {
+    return localStorage.getItem('appBackupNetwork') || 'wifi';
   });
-  const [profileImage, setProfileImage] = useState<string>(() => {
-    return localStorage.getItem('profileImage') || '';
-  });
+
+  const [pendingRestorePrompt, setPendingRestorePrompt] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('appAutoBackup', autoBackup);
+  }, [autoBackup]);
+
+  useEffect(() => {
+    localStorage.setItem('appBackupNetwork', backupNetwork);
+  }, [backupNetwork]);
+
+  // Auto Backup Logic
+  useEffect(() => {
+    if (autoBackup !== 'off' && googleTokens && session) {
+      const lastBackup = localStorage.getItem('lastAutoBackupDate');
+      const today = new Date().toISOString().split('T')[0];
+      
+      let shouldBackup = false;
+      if (!lastBackup) {
+        shouldBackup = true;
+      } else {
+        const lastDate = new Date(lastBackup);
+        const now = new Date();
+        const diffTime = Math.abs(now.getTime() - lastDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        
+        if (autoBackup === 'daily' && diffDays >= 1) shouldBackup = true;
+        if (autoBackup === 'weekly' && diffDays >= 7) shouldBackup = true;
+        if (autoBackup === 'monthly' && diffDays >= 30) shouldBackup = true;
+      }
+
+      if (shouldBackup) {
+        let networkOk = true;
+        if (backupNetwork === 'wifi') {
+          // @ts-ignore
+          const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+          if (connection && connection.type !== 'wifi' && connection.type !== 'ethernet' && connection.type !== 'unknown') {
+            networkOk = false;
+          }
+        }
+
+        if (networkOk) {
+          handleBackupToDrive(true).then(() => {
+            localStorage.setItem('lastAutoBackupDate', today);
+          });
+        }
+      }
+    }
+  }, [autoBackup, backupNetwork, googleTokens, session]);
 
   useEffect(() => {
     localStorage.setItem('profileEmail', profileEmail);
@@ -8711,6 +8862,8 @@ export default function App() {
     localStorage.removeItem('appWidgetEnabled');
     localStorage.removeItem('appFloatingBubbleEnabled');
     localStorage.removeItem('profileName');
+    localStorage.removeItem('profileEmail');
+    localStorage.removeItem('profileImage');
     localStorage.removeItem('google_tokens');
     setGoogleTokens(null);
     window.location.reload();
@@ -8727,15 +8880,14 @@ export default function App() {
   if (!session) {
     return (
       <LanguageContext.Provider value={contextValue}>
-        <AuthView onSuccess={async (isNewUser) => {
+        <AuthView onSuccess={(isNewUser, newSession) => {
           if (!isNewUser) {
             setOnboardingComplete(true);
             localStorage.setItem('onboarding_complete', 'true');
+            setPendingRestorePrompt(true);
           }
-          // Fallback to ensure session is set immediately
-          const { data } = await supabase.auth.getSession();
-          if (data.session) {
-            setSession(data.session);
+          if (newSession) {
+            setSession(newSession);
           }
         }} />
       </LanguageContext.Provider>
@@ -8776,6 +8928,36 @@ export default function App() {
     <LanguageContext.Provider value={contextValue}>
       <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
         <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-2xl overflow-hidden">
+          {pendingRestorePrompt && (
+            <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+                <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-4 mx-auto">
+                  <CloudDownload size={24} />
+                </div>
+                <h3 className="text-lg font-semibold text-center text-slate-900 mb-2">Restore Backup?</h3>
+                <p className="text-sm text-slate-500 text-center mb-6">
+                  We noticed you just logged in. Would you like to restore your previous data from Google Drive?
+                </p>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setPendingRestorePrompt(false)}
+                    className="flex-1 py-2.5 rounded-xl font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                  >
+                    Skip
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setPendingRestorePrompt(false);
+                      handleRestoreFromDrive();
+                    }}
+                    className="flex-1 py-2.5 rounded-xl font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                  >
+                    Restore
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <AnimatePresence>
             {selectedTransaction && activeTab !== 'edit' ? (
               <TransactionDetailView 
@@ -8918,10 +9100,14 @@ export default function App() {
                     onOpenFloatingBubbleSettings={() => setActiveTab('floatingBubbleSettings')}
                     onLogout={handleLogout}
                     onConnectGoogle={handleConnectGoogle}
-                    onBackupToDrive={handleBackupToDrive}
+                    onBackupToDrive={() => handleBackupToDrive(false)}
                     onRestoreFromDrive={handleRestoreFromDrive}
                     onDisconnectGoogle={handleDisconnectGoogle}
                     googleTokens={googleTokens}
+                    autoBackup={autoBackup}
+                    setAutoBackup={setAutoBackup}
+                    backupNetwork={backupNetwork}
+                    setBackupNetwork={setBackupNetwork}
                   />
                 ) : activeTab === 'editHome' ? (
                   <EditHomePageView 

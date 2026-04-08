@@ -4,7 +4,7 @@ import { Mail, Lock, Loader2, AlertCircle, Check, ArrowRight, ShieldCheck, Spark
 import { supabase } from './supabaseClient';
 
 interface AuthViewProps {
-  onSuccess: (isNewUser: boolean) => void;
+  onSuccess: (isNewUser: boolean, session?: any) => void;
 }
 
 export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
@@ -23,12 +23,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
-        onSuccess(false);
+        onSuccess(false, data.session);
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -37,7 +37,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
         if (error) throw error;
         
         if (data.session) {
-          onSuccess(true);
+          onSuccess(true, data.session);
         } else {
           setMessage('Account created! Please check your email for the confirmation link.');
         }
