@@ -46,6 +46,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess }) => {
       let errorMessage = err.message || 'An error occurred during authentication';
       if (errorMessage === 'Failed to fetch') {
         errorMessage = 'Failed to connect to Supabase. Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are correctly set in the Secrets panel and prefixed with VITE_.';
+      } else if (errorMessage.toLowerCase().includes('email not confirmed')) {
+        errorMessage = 'Please check your email and click the confirmation link before signing in.';
+      } else if (errorMessage.toLowerCase().includes('invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please try again.';
       }
       setError(errorMessage);
     } finally {

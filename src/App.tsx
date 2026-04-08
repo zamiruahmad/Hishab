@@ -8727,10 +8727,15 @@ export default function App() {
   if (!session) {
     return (
       <LanguageContext.Provider value={contextValue}>
-        <AuthView onSuccess={(isNewUser) => {
+        <AuthView onSuccess={async (isNewUser) => {
           if (!isNewUser) {
             setOnboardingComplete(true);
             localStorage.setItem('onboarding_complete', 'true');
+          }
+          // Fallback to ensure session is set immediately
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            setSession(data.session);
           }
         }} />
       </LanguageContext.Provider>
