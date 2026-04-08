@@ -8148,9 +8148,18 @@ export default function App() {
     return localStorage.getItem('profileImage') || '';
   });
 
+  const [pendingRestorePrompt, setPendingRestorePrompt] = useState(false);
+  const [pendingRestoreAfterAuth, setPendingRestoreAfterAuth] = useState(false);
+
   useEffect(() => {
     console.log('Supabase URL loaded:', import.meta.env.VITE_SUPABASE_URL ? 'Yes' : 'No');
+    // Safety timeout for auth checking
+    const authTimeout = setTimeout(() => {
+      setIsAuthChecking(false);
+    }, 5000);
+
     supabase.auth.getSession().then(({ data: { session }, error }) => {
+      clearTimeout(authTimeout);
       if (error) {
         console.error('Auth session error:', error);
         supabase.auth.signOut();
@@ -8232,195 +8241,6 @@ export default function App() {
     }
   }, [session, isProfileLoaded, onboardingComplete, profileName]);
 
-  // Google OAuth Listener
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
-        const newTokens = event.data.tokens;
-        setGoogleTokens((prev: any) => {
-          // Merge tokens to preserve refresh_token if it's missing in the new ones
-          const merged = { ...prev, ...newTokens };
-          localStorage.setItem('google_tokens', JSON.stringify(merged));
-          return merged;
-        });
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  const handleConnectGoogle = async () => {
-    try {
-      const response = await fetch('/api/auth/google/url');
-      const { url } = await response.json();
-      window.open(url, 'google_auth', 'width=600,height=700');
-    } catch (error) {
-      console.error('Error getting Google auth URL:', error);
-    }
-  };
-
-  const handleBackupToDrive = async (silent = false) => {
-    console.log('Initiating backup to Drive...');
-    if (!googleTokens) {
-      console.warn('Backup aborted: No Google tokens found.');
-      if (!silent) alert('Please connect your Google Drive first.');
-      return;
-    }
-
-    if (!googleTokens.refresh_token) {
-      console.warn('Backup aborted: No refresh token found.');
-      if (!silent) alert('Google Drive connection is incomplete. Please disconnect and reconnect Google Drive in Settings to enable backup.');
-      return;
-    }
-    
-    if (!silent) setIsBackingUp(true);
-    
-    const backupData = {
-      transactions,
-      managementData,
-      profile: {
-        name: profileName,
-        image: profileImage,
-        email: profileEmail,
-        language,
-        currency
-      },
-      settings: {
-        darkMode,
-        widgetEnabled,
-        floatingBubbleEnabled,
-        homeSections,
-        autoBackup,
-        backupNetwork
-      },
-      onboarding: JSON.parse(localStorage.getItem('onboarding_data') || '{}'),
-      version: '2.0',
-      timestamp: new Date().toISOString()
-    };
-
-    console.log('Backup data prepared, sending to server...');
-
-    try {
-      const response = await fetch('/api/drive/backup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tokens: googleTokens,
-          data: backupData,
-          fileName: `finance_backup_${session?.user?.id || 'default'}.json`
-        })
-      });
-      
-      const result = await response.json().catch(() => ({ error: 'Failed to parse server response' }));
-      
-      if (!response.ok) {
-        throw new Error(result.error || `Server responded with ${response.status}`);
-      }
-
-      console.log('Backup server response:', result);
-
-      if (result.success) {
-        if (!silent) alert('Backup successful!');
-      } else {
-        throw new Error(result.error || 'Unknown server error');
-      }
-    } catch (error: any) {
-      console.error('Backup failed:', error);
-      let msg = error.message;
-      if (msg === 'Failed to fetch') {
-        msg = 'Could not reach the server. Please check your internet connection or try again later.';
-      }
-      if (!silent) alert('Backup failed: ' + msg);
-    } finally {
-      if (!silent) setIsBackingUp(false);
-    }
-  };
-
-  const handleRestoreFromDrive = async () => {
-    console.log('Initiating restore from Drive...');
-    if (!googleTokens) {
-      console.warn('Restore aborted: No Google tokens found.');
-      alert('Please connect your Google Drive first.');
-      return;
-    }
-
-    if (!googleTokens.refresh_token) {
-      console.warn('Restore aborted: No refresh token found.');
-      alert('Google Drive connection is incomplete. Please disconnect and reconnect Google Drive in Settings to enable restore.');
-      return;
-    }
-
-    setIsRestoring(true);
-
-    try {
-      const response = await fetch('/api/drive/restore', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tokens: googleTokens,
-          fileName: `finance_backup_${session?.user?.id || 'default'}.json`
-        })
-      });
-
-      const result = await response.json().catch(() => ({ error: 'Failed to parse server response' }));
-
-      if (!response.ok) {
-        throw new Error(result.error || `Server responded with ${response.status}`);
-      }
-
-      console.log('Restore server response:', result);
-
-      if (result.data) {
-        const data = result.data;
-        
-        // Restore Transactions
-        if (data.transactions) setTransactions(data.transactions);
-        
-        // Restore Management Data
-        if (data.managementData) setManagementData(data.managementData);
-        
-        // Restore Profile (New format)
-        if (data.profile) {
-          if (data.profile.name) setProfileName(data.profile.name);
-          if (data.profile.image) setProfileImage(data.profile.image);
-          if (data.profile.email) setProfileEmail(data.profile.email);
-          if (data.profile.language) setLanguage(data.profile.language);
-          if (data.profile.currency) setCurrency(data.profile.currency);
-        } 
-        // Fallback for old format
-        else if (data.onboarding) {
-          if (data.onboarding.name) setProfileName(data.onboarding.name);
-          if (data.onboarding.profileImage) setProfileImage(data.onboarding.profileImage);
-          if (data.onboarding.language) setLanguage(data.onboarding.language);
-          if (data.onboarding.currency) setCurrency(data.onboarding.currency);
-        }
-
-        // Restore Settings
-        if (data.settings) {
-          if (data.settings.darkMode !== undefined) setDarkMode(data.settings.darkMode);
-          if (data.settings.widgetEnabled !== undefined) setWidgetEnabled(data.settings.widgetEnabled);
-          if (data.settings.floatingBubbleEnabled !== undefined) setFloatingBubbleEnabled(data.settings.floatingBubbleEnabled);
-          if (data.settings.homeSections) setHomeSections(data.settings.homeSections);
-          if (data.settings.autoBackup) setAutoBackup(data.settings.autoBackup);
-          if (data.settings.backupNetwork) setBackupNetwork(data.settings.backupNetwork);
-        }
-
-        if (data.onboarding) {
-          localStorage.setItem('onboarding_data', JSON.stringify(data.onboarding));
-        }
-
-        alert('Restore successful!');
-      } else {
-        throw new Error(result.error || 'No backup data found or unknown error');
-      }
-    } catch (error: any) {
-      console.error('Restore failed:', error);
-      alert('Restore failed: ' + error.message);
-    } finally {
-      setIsRestoring(false);
-    }
-  };
-
   const handleDisconnectGoogle = () => {
     setGoogleTokens(null);
     localStorage.removeItem('google_tokens');
@@ -8470,8 +8290,6 @@ export default function App() {
   const [backupNetwork, setBackupNetwork] = useState<string>(() => {
     return localStorage.getItem('appBackupNetwork') || 'wifi';
   });
-
-  const [pendingRestorePrompt, setPendingRestorePrompt] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('appAutoBackup', autoBackup);
@@ -8682,6 +8500,203 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('management_data', JSON.stringify(managementData));
   }, [managementData]);
+
+  const handleConnectGoogle = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/google/url');
+      const { url } = await response.json();
+      window.open(url, 'google_auth', 'width=600,height=700');
+    } catch (error) {
+      console.error('Error getting Google auth URL:', error);
+    }
+  }, []);
+
+  const handleBackupToDrive = useCallback(async (silent = false) => {
+    console.log('Initiating backup to Drive...');
+    if (!googleTokens) {
+      console.warn('Backup aborted: No Google tokens found.');
+      if (!silent) alert('Please connect your Google Drive first.');
+      return;
+    }
+
+    if (!googleTokens.refresh_token) {
+      console.warn('Backup aborted: No refresh token found.');
+      if (!silent) alert('Google Drive connection is incomplete. Please disconnect and reconnect Google Drive in Settings to enable backup.');
+      return;
+    }
+    
+    if (!silent) setIsBackingUp(true);
+    
+    const backupData = {
+      transactions,
+      managementData,
+      profile: {
+        name: profileName,
+        image: profileImage,
+        email: profileEmail,
+        language,
+        currency
+      },
+      settings: {
+        darkMode,
+        widgetEnabled,
+        floatingBubbleEnabled,
+        homeSections,
+        autoBackup,
+        backupNetwork
+      },
+      onboarding: JSON.parse(localStorage.getItem('onboarding_data') || '{}'),
+      version: '2.0',
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('Backup data prepared, sending to server...');
+
+    try {
+      const response = await fetch('/api/drive/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tokens: googleTokens,
+          data: backupData,
+          fileName: `finance_backup_${session?.user?.id || 'default'}.json`
+        })
+      });
+      
+      const result = await response.json().catch(() => ({ error: 'Failed to parse server response' }));
+      
+      if (!response.ok) {
+        throw new Error(result.error || `Server responded with ${response.status}`);
+      }
+
+      console.log('Backup server response:', result);
+
+      if (result.success) {
+        if (!silent) alert('Backup successful!');
+      } else {
+        throw new Error(result.error || 'Unknown server error');
+      }
+    } catch (error: any) {
+      console.error('Backup failed:', error);
+      let msg = error.message;
+      if (msg === 'Failed to fetch') {
+        msg = 'Could not reach the server. Please check your internet connection or try again later.';
+      }
+      if (!silent) alert('Backup failed: ' + msg);
+    } finally {
+      if (!silent) setIsBackingUp(false);
+    }
+  }, [googleTokens, transactions, managementData, profileName, profileImage, profileEmail, language, currency, darkMode, widgetEnabled, floatingBubbleEnabled, homeSections, autoBackup, backupNetwork, session]);
+
+  const handleRestoreFromDrive = useCallback(async () => {
+    console.log('Initiating restore from Drive...');
+    if (!googleTokens) {
+      console.warn('Restore aborted: No Google tokens found.');
+      alert('Please connect your Google Drive first.');
+      return;
+    }
+
+    if (!googleTokens.refresh_token) {
+      console.warn('Restore aborted: No refresh token found.');
+      alert('Google Drive connection is incomplete. Please disconnect and reconnect Google Drive in Settings to enable restore.');
+      return;
+    }
+
+    setIsRestoring(true);
+
+    try {
+      const response = await fetch('/api/drive/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tokens: googleTokens,
+          fileName: `finance_backup_${session?.user?.id || 'default'}.json`
+        })
+      });
+
+      const result = await response.json().catch(() => ({ error: 'Failed to parse server response' }));
+
+      if (!response.ok) {
+        throw new Error(result.error || `Server responded with ${response.status}`);
+      }
+
+      console.log('Restore server response:', result);
+
+      if (result.data) {
+        const data = result.data;
+        
+        // Restore Transactions
+        if (data.transactions) setTransactions(data.transactions);
+        
+        // Restore Management Data
+        if (data.managementData) setManagementData(data.managementData);
+        
+        // Restore Profile (New format)
+        if (data.profile) {
+          if (data.profile.name) setProfileName(data.profile.name);
+          if (data.profile.image) setProfileImage(data.profile.image);
+          if (data.profile.email) setProfileEmail(data.profile.email);
+          if (data.profile.language) setLanguage(data.profile.language);
+          if (data.profile.currency) setCurrency(data.profile.currency);
+        } 
+        // Fallback for old format
+        else if (data.onboarding) {
+          if (data.onboarding.name) setProfileName(data.onboarding.name);
+          if (data.onboarding.profileImage) setProfileImage(data.onboarding.profileImage);
+          if (data.onboarding.language) setLanguage(data.onboarding.language);
+          if (data.onboarding.currency) setCurrency(data.onboarding.currency);
+        }
+
+        // Restore Settings
+        if (data.settings) {
+          if (data.settings.darkMode !== undefined) setDarkMode(data.settings.darkMode);
+          if (data.settings.widgetEnabled !== undefined) setWidgetEnabled(data.settings.widgetEnabled);
+          if (data.settings.floatingBubbleEnabled !== undefined) setFloatingBubbleEnabled(data.settings.floatingBubbleEnabled);
+          if (data.settings.homeSections) setHomeSections(data.settings.homeSections);
+          if (data.settings.autoBackup) setAutoBackup(data.settings.autoBackup);
+          if (data.settings.backupNetwork) setBackupNetwork(data.settings.backupNetwork);
+        }
+
+        if (data.onboarding) {
+          localStorage.setItem('onboarding_data', JSON.stringify(data.onboarding));
+        }
+
+        alert('Restore successful!');
+      } else {
+        throw new Error(result.error || 'No backup data found or unknown error');
+      }
+    } catch (error: any) {
+      console.error('Restore failed:', error);
+      alert('Restore failed: ' + error.message);
+    } finally {
+      setIsRestoring(false);
+    }
+  }, [googleTokens, session]);
+
+  // Google OAuth Listener
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
+        const newTokens = event.data.tokens;
+        setGoogleTokens((prev: any) => {
+          // Merge tokens to preserve refresh_token if it's missing in the new ones
+          const merged = { ...prev, ...newTokens };
+          localStorage.setItem('google_tokens', JSON.stringify(merged));
+          return merged;
+        });
+
+        if (pendingRestoreAfterAuth) {
+          setPendingRestoreAfterAuth(false);
+          // Wait a bit for state to update before calling restore
+          setTimeout(() => {
+            handleRestoreFromDrive();
+          }, 500);
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [pendingRestoreAfterAuth, handleRestoreFromDrive]);
 
   const calculateTotals = () => {
     let income = 0;
@@ -8981,19 +8996,40 @@ export default function App() {
   }, []);
 
   const handleLogout = useCallback(async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem('onboarding_complete');
-    localStorage.removeItem('appLanguage');
-    localStorage.removeItem('appCurrency');
-    localStorage.removeItem('appDarkMode');
-    localStorage.removeItem('appWidgetEnabled');
-    localStorage.removeItem('appFloatingBubbleEnabled');
-    localStorage.removeItem('profileName');
-    localStorage.removeItem('profileEmail');
-    localStorage.removeItem('profileImage');
-    localStorage.removeItem('google_tokens');
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+
+    // Clear all relevant localStorage items
+    const itemsToRemove = [
+      'onboarding_complete', 
+      'appLanguage', 
+      'appCurrency', 
+      'appDarkMode',
+      'appWidgetEnabled', 
+      'appFloatingBubbleEnabled', 
+      'profileName',
+      'profileEmail', 
+      'profileImage', 
+      'google_tokens',
+      'transactions',
+      'management_data',
+      'onboarding_data',
+      'userOccupation',
+      'lastAutoBackupDate'
+    ];
+    itemsToRemove.forEach(item => localStorage.removeItem(item));
+    
+    // Reset states
+    setSession(null);
     setGoogleTokens(null);
-    window.location.reload();
+    
+    // Small delay to ensure signOut is processed before reload
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 100);
   }, []);
 
   if (isAuthChecking) {
@@ -9075,7 +9111,12 @@ export default function App() {
                   <button 
                     onClick={() => {
                       setPendingRestorePrompt(false);
-                      handleRestoreFromDrive();
+                      if (!googleTokens) {
+                        setPendingRestoreAfterAuth(true);
+                        handleConnectGoogle();
+                      } else {
+                        handleRestoreFromDrive();
+                      }
                     }}
                     className="flex-1 py-2.5 rounded-xl font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
                   >
