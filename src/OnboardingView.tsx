@@ -236,57 +236,6 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
               transition={{ duration: 0.4 }}
-              className="flex-1 flex flex-col justify-center items-center text-center max-w-md mx-auto w-full"
-            >
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 text-purple-600 rounded-2xl mb-6">
-                <Sparkles size={32} />
-              </div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">{t('আপনার প্রোফাইল', 'Your Profile')}</h2>
-              <p className="text-slate-500 text-lg mb-10">{t('আপনার নাম ও ছবি যোগ করুন', 'Add your name and photo')}</p>
-              
-              <div className="relative mb-10 group">
-                <div className="w-32 h-32 rounded-[2.5rem] bg-white border-4 border-white shadow-xl overflow-hidden flex items-center justify-center relative transition-transform duration-300 group-hover:scale-105">
-                  {profileImage ? (
-                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={56} className="text-slate-300" />
-                  )}
-                  <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-sm">
-                    <Camera size={28} className="text-white" />
-                  </div>
-                </div>
-                <button className="absolute -bottom-2 -right-2 w-10 h-10 bg-purple-500 rounded-full border-4 border-slate-50 flex items-center justify-center text-white shadow-lg pointer-events-none">
-                  <Plus size={20} strokeWidth={3} />
-                </button>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleImageUpload}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-              </div>
-
-              <div className="w-full relative">
-                <input 
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t('আপনার নাম লিখুন', 'Enter your name')}
-                  className="w-full bg-white border-2 border-transparent rounded-[1.5rem] px-6 py-5 text-xl font-bold text-slate-900 focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all text-center shadow-sm placeholder:text-slate-400 placeholder:font-medium"
-                  autoFocus
-                  onKeyDown={(e) => e.key === 'Enter' && name.trim() && handleNext()}
-                />
-              </div>
-            </motion.div>
-          )}
-
-          {step === 4 && (
-            <motion.div 
-              key="step4"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -30 }}
-              transition={{ duration: 0.4 }}
               className="flex-1 flex flex-col pt-12 max-w-md mx-auto w-full"
             >
               <div className="text-center mb-10">
@@ -335,9 +284,9 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
             </motion.div>
           )}
 
-          {step === 5 && (
+          {step === 4 && (
             <motion.div 
-              key="step5"
+              key="step4"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
@@ -393,6 +342,57 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
               </div>
             </motion.div>
           )}
+
+          {step === 5 && (
+            <motion.div 
+              key="step5"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.4 }}
+              className="flex-1 flex flex-col justify-center items-center text-center max-w-md mx-auto w-full"
+            >
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 text-purple-600 rounded-2xl mb-6">
+                <Sparkles size={32} />
+              </div>
+              <h2 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">{t('আপনার প্রোফাইল', 'Your Profile')}</h2>
+              <p className="text-slate-500 text-lg mb-10">{t('আপনার নাম ও ছবি যোগ করুন', 'Add your name and photo')}</p>
+              
+              <div className="relative mb-10 group">
+                <div className="w-32 h-32 rounded-[2.5rem] bg-white border-4 border-white shadow-xl overflow-hidden flex items-center justify-center relative transition-transform duration-300 group-hover:scale-105">
+                  {profileImage ? (
+                    <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={56} className="text-slate-300" />
+                  )}
+                  <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-sm">
+                    <Camera size={28} className="text-white" />
+                  </div>
+                </div>
+                <button className="absolute -bottom-2 -right-2 w-10 h-10 bg-purple-500 rounded-full border-4 border-slate-50 flex items-center justify-center text-white shadow-lg pointer-events-none">
+                  <Plus size={20} strokeWidth={3} />
+                </button>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleImageUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+              </div>
+
+              <div className="w-full relative">
+                <input 
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t('আপনার নাম লিখুন', 'Enter your name')}
+                  className="w-full bg-white border-2 border-transparent rounded-[1.5rem] px-6 py-5 text-xl font-bold text-slate-900 focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all text-center shadow-sm placeholder:text-slate-400 placeholder:font-medium"
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && name.trim() && handleNext()}
+                />
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
@@ -401,7 +401,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
         <div className="max-w-md mx-auto">
           <button 
             onClick={handleNext}
-            disabled={(step === 2 && !occupation) || (step === 3 && !name.trim())}
+            disabled={(step === 2 && !occupation) || (step === 5 && !name.trim())}
             className="w-full bg-slate-900 text-white rounded-[1.5rem] py-5 font-bold text-lg shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2 active:scale-[0.98]"
           >
             {step === totalSteps ? t('শুরু করুন', 'Get Started') : t('পরবর্তী ধাপ', 'Next Step')} 

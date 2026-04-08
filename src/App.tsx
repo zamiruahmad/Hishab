@@ -8858,11 +8858,7 @@ export default function App() {
                     setFloatingBubbleEnabled={setFloatingBubbleEnabled}
                     onOpenWidgetSettings={() => setActiveTab('widgetSettings')}
                     onOpenFloatingBubbleSettings={() => setActiveTab('floatingBubbleSettings')}
-                    onLogout={() => {
-                      localStorage.removeItem('onboarding_complete');
-                      setOnboardingComplete(false);
-                      setActiveTab('home');
-                    }}
+                    onLogout={handleLogout}
                     onConnectGoogle={handleConnectGoogle}
                     onBackupToDrive={handleBackupToDrive}
                     onRestoreFromDrive={handleRestoreFromDrive}
