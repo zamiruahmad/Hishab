@@ -95,6 +95,16 @@ async function startServer() {
         has_refresh_token: !!tokens.refresh_token,
         expiry_date: tokens.expiry_date
       });
+
+      client.setCredentials(tokens);
+      const oauth2 = google.oauth2({ version: 'v2', auth: client });
+      let userInfo = null;
+      try {
+        const userInfoResponse = await oauth2.userinfo.get();
+        userInfo = userInfoResponse.data;
+      } catch (err) {
+        console.error('Failed to fetch Google user info:', err);
+      }
       
       // Send tokens back to client via postMessage and close popup
       res.send(`
@@ -104,7 +114,8 @@ async function startServer() {
               if (window.opener) {
                 window.opener.postMessage({ 
                   type: 'GOOGLE_AUTH_SUCCESS', 
-                  tokens: ${JSON.stringify(tokens)} 
+                  tokens: ${JSON.stringify(tokens)},
+                  user: ${JSON.stringify(userInfo)}
                 }, '*');
                 window.close();
               } else {

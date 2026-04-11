@@ -1376,15 +1376,15 @@ const TransactionItem = React.memo(({
       {/* Left Icon - Box Style from Image */}
       <div 
         className={cn(
-          "w-11 h-11 rounded-full flex items-center justify-center shrink-0 overflow-hidden", 
-          iconBg
+          "w-11 h-11 flex items-center justify-center shrink-0",
+          tx.image ? "rounded-full overflow-hidden" : ""
         )}
       >
         {tx.image ? (
           <img src={tx.image} alt={tx.category} className="w-full h-full object-cover" />
         ) : (
           <div className={cn("w-full h-full flex items-center justify-center", iconColor)}>
-            <Icon size={20} strokeWidth={2.5} />
+            <Icon size={24} strokeWidth={2.5} />
           </div>
         )}
       </div>
@@ -5460,6 +5460,7 @@ const SettingsView = React.memo(({
   onRestoreFromDrive: () => void,
   onDisconnectGoogle: () => void,
   googleTokens: any,
+  googleUser?: any,
   autoBackup: string,
   setAutoBackup: (val: string) => void,
   backupNetwork: string,
@@ -5531,7 +5532,7 @@ const SettingsView = React.memo(({
                   </div>
                   <div className="text-left">
                     <h4 className="text-slate-900 font-medium text-sm">{t('googleDriveConnected') || 'Google Drive Connected'}</h4>
-                    <p className="text-emerald-600 text-xs">{t('readyToBackup') || 'Ready to backup/restore'}</p>
+                    <p className="text-emerald-600 text-xs">{googleUser?.email || t('readyToBackup') || 'Ready to backup/restore'}</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
@@ -8363,7 +8364,7 @@ export default function App() {
       clearTimeout(authTimeout);
       if (error) {
         console.error('Auth session error:', error);
-        supabase.auth.signOut();
+        supabase.auth.signOut().catch(console.error);
         setSession(null);
         setIsAuthChecking(false);
         return;
@@ -8412,7 +8413,7 @@ export default function App() {
       setIsAuthChecking(false);
     }).catch((err) => {
       console.error('Unhandled auth session error:', err);
-      supabase.auth.signOut();
+      supabase.auth.signOut().catch(console.error);
       setSession(null);
       setIsAuthChecking(false);
     });
@@ -8421,6 +8422,12 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || (event as any) === 'USER_DELETED') {
+        setSession(null);
+        return;
+      }
+      if ((event as any) === 'TOKEN_REFRESH_FAILED') {
+        console.error('Token refresh failed, signing out...');
+        supabase.auth.signOut().catch(console.error);
         setSession(null);
         return;
       }
@@ -8477,6 +8484,10 @@ export default function App() {
     const saved = localStorage.getItem('google_tokens');
     return saved ? JSON.parse(saved) : null;
   });
+  const [googleUser, setGoogleUser] = useState<any>(() => {
+    const saved = localStorage.getItem('google_user');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   useEffect(() => {
     if (session && isProfileLoaded && onboardingComplete) {
@@ -8497,7 +8508,9 @@ export default function App() {
 
   const handleDisconnectGoogle = async () => {
     setGoogleTokens(null);
+    setGoogleUser(null);
     localStorage.removeItem('google_tokens');
+    localStorage.removeItem('google_user');
     if (session?.user?.id) {
       try {
         await supabase.from('user_settings').upsert({
@@ -9078,6 +9091,11 @@ export default function App() {
           }
         }
 
+        if (event.data.user) {
+          setGoogleUser(event.data.user);
+          localStorage.setItem('google_user', JSON.stringify(event.data.user));
+        }
+
         setGoogleTokens((prev: any) => {
           // Merge tokens to preserve refresh_token if it's missing in the new ones
           const merged = { ...prev, ...newTokens };
@@ -9097,6 +9115,13 @@ export default function App() {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [pendingRestoreAfterAuth, handleRestoreFromDrive, session]);
+
+  useEffect(() => {
+    if (pendingRestorePrompt && isProfileLoaded && googleTokens?.refresh_token) {
+      setPendingRestorePrompt(false);
+      handleRestoreFromDrive();
+    }
+  }, [pendingRestorePrompt, isProfileLoaded, googleTokens, handleRestoreFromDrive]);
 
   const calculateTotals = () => {
     let income = 0;
@@ -9425,6 +9450,7 @@ export default function App() {
     // Reset states
     setSession(null);
     setGoogleTokens(null);
+    setGoogleUser(null);
     
     // Small delay to ensure signOut is processed before reload
     setTimeout(() => {
@@ -9491,7 +9517,7 @@ export default function App() {
     <LanguageContext.Provider value={contextValue}>
       <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
         <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-2xl overflow-hidden">
-          {pendingRestorePrompt && (
+          {pendingRestorePrompt && isProfileLoaded && !googleTokens?.refresh_token && (
             <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
                 <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-4 mx-auto">
@@ -9714,6 +9740,7 @@ export default function App() {
                     onRestoreFromDrive={handleRestoreFromDrive}
                     onDisconnectGoogle={handleDisconnectGoogle}
                     googleTokens={googleTokens}
+                    googleUser={googleUser}
                     autoBackup={autoBackup}
                     setAutoBackup={setAutoBackup}
                     backupNetwork={backupNetwork}
