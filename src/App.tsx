@@ -2517,7 +2517,7 @@ const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSea
       subtitle: t('planning'),
       items: [
         { label: t('budgets'), id: 'Budgets', icon: Target, count: managementData.budgets.length, color: 'text-rose-600', bg: 'bg-rose-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('budgets') },
-        { label: t('financialGoals'), id: 'Financial Goals', icon: Star, count: 3, color: 'text-purple-600', bg: 'bg-purple-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('financialGoals') },
+        { label: t('financialGoals'), id: 'Financial Goals', icon: Star, count: managementData.financialGoals?.length || 0, color: 'text-purple-600', bg: 'bg-purple-500/10 backdrop-blur-xl border border-white shadow-sm', sub: t('financialGoals') },
       ]
     },
     {
@@ -4734,10 +4734,22 @@ const ProfileView = React.memo(({ transactions, managementData, onClose }: { tra
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const compressedBase64 = await compressImage(file);
-        setProfileImage(compressedBase64);
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+        setProfileImage(data.publicUrl);
       } catch (error) {
-        console.error('Error compressing image:', error);
+        console.error('Error uploading image:', error);
+        alert('Error uploading image. Please try again.');
       }
     }
   };
@@ -8720,6 +8732,7 @@ export default function App() {
       reminders: [],
       tasks: [],
       budgets: [],
+      financialGoals: [],
       recurring: [],
       subscriptions: [],
       investments: [],

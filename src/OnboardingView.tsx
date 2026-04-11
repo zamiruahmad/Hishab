@@ -19,6 +19,7 @@ import {
 import { cn } from './utils';
 import { Currency } from './types';
 import { CURRENCIES } from './constants';
+import { supabase } from './supabaseClient';
 
 interface OnboardingViewProps {
   onComplete: (data: {
@@ -47,14 +48,27 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
     { id: 'acc-bkash', name: 'বিকাশ', icon: 'Smartphone', color: '#ec4899', accountType: 'Mobile Banking', balance: 0, isPinned: true, includeInTotal: true },
   ]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+        setProfileImage(data.publicUrl);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        alert('Error uploading image. Please try again.');
+      }
     }
   };
 
