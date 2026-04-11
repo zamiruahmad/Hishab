@@ -93,7 +93,9 @@ import {
   Camera,
   RefreshCw,
   Wifi,
-  Loader2
+  Loader2,
+  ArrowDownRight,
+  SlidersHorizontal
 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'motion/react';
 import { 
@@ -1029,7 +1031,7 @@ const ProfileBottomSheet = ({ isOpen, onClose, onLogout }: { isOpen: boolean, on
           <button className="w-full flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors">
             <div className="flex items-center gap-3">
               {profileImage ? (
-                <img src={profileImage} alt={profileName} className="w-10 h-10 rounded-lg object-cover" />
+                <img src={profileImage} alt={profileName} className="w-10 h-10 rounded-lg object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 font-medium">
                   {profileName.charAt(0).toUpperCase()}
@@ -1138,7 +1140,7 @@ const UnifiedTopBar = React.memo(({
                 className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left"
               >
                 {profileImage ? (
-                  <img src={profileImage} alt={profileName} className="w-10 h-10 rounded-lg object-cover" />
+                  <img src={profileImage} alt={profileName} className="w-10 h-10 rounded-lg object-cover" referrerPolicy="no-referrer" />
                 ) : (
                   <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 font-medium">
                     {profileName.charAt(0).toUpperCase()}
@@ -1237,12 +1239,12 @@ const SummaryGrid = React.memo(({ totals, sections }: { totals: any, sections: R
   const { income, expense, paona, dena, joma, invest, denaRepaid, paonaRepaid } = totals;
 
   const allItems = [
-    { id: 'summary_expense', label: t('expense'), value: expense, icon: ArrowUpRight, color: 'text-rose-600', bg: 'bg-rose-500/10 backdrop-blur-xl border border-white shadow-sm' },
-    { id: 'summary_income', label: t('income'), value: income, icon: ArrowDownLeft, color: 'text-emerald-600', bg: 'bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm' },
-    { id: 'summary_taken', label: t('taken'), value: dena, icon: ArrowLeftRight, color: 'text-rose-600', bg: 'bg-rose-500/10 backdrop-blur-xl border border-white shadow-sm' },
-    { id: 'summary_given', label: t('given'), value: paona, icon: ArrowLeftRight, color: 'text-emerald-600', bg: 'bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm' },
-    { id: 'summary_savings', label: t('savings'), value: joma, icon: PiggyBank, color: 'text-blue-600', bg: 'bg-blue-500/10 backdrop-blur-xl border border-white shadow-sm' },
-    { id: 'summary_invest', label: t('invest'), value: invest, icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm' },
+    { id: 'summary_expense', label: t('expense'), value: expense, icon: ArrowUpRight, color: 'text-rose-600', bg: 'bg-rose-500/10 backdrop-blur-xl border border-white shadow-sm', gradient: 'bg-rose-500/20' },
+    { id: 'summary_income', label: t('income'), value: income, icon: ArrowDownLeft, color: 'text-emerald-600', bg: 'bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm', gradient: 'bg-emerald-500/20' },
+    { id: 'summary_taken', label: t('taken'), value: dena, icon: ArrowLeftRight, color: 'text-amber-600', bg: 'bg-amber-500/10 backdrop-blur-xl border border-white shadow-sm', gradient: 'bg-amber-500/20' },
+    { id: 'summary_given', label: t('given'), value: paona, icon: ArrowLeftRight, color: 'text-teal-600', bg: 'bg-teal-500/10 backdrop-blur-xl border border-white shadow-sm', gradient: 'bg-teal-500/20' },
+    { id: 'summary_savings', label: t('savings'), value: joma, icon: PiggyBank, color: 'text-blue-600', bg: 'bg-blue-500/10 backdrop-blur-xl border border-white shadow-sm', gradient: 'bg-blue-500/20' },
+    { id: 'summary_invest', label: t('invest'), value: invest, icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm', gradient: 'bg-indigo-500/20' },
   ];
 
   const mainItems = allItems.filter(item => sections[item.id]);
@@ -1256,13 +1258,16 @@ const SummaryGrid = React.memo(({ totals, sections }: { totals: any, sections: R
             const idx = mainItems.indexOf(item);
             const isLastOdd = mainItems.length % 2 !== 0 && idx === mainItems.length - 1;
             return (
-              <div key={item.id} className={cn("bg-slate-100 p-3 flex items-center gap-3", isLastOdd ? "col-span-2" : "")}>
-                <div className={cn("w-9 h-9 rounded-md flex items-center justify-center shrink-0", item.bg, item.color)}>
-                  <item.icon size={18} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-slate-500 text-xs font-medium leading-tight mb-1 text-clip-fix">{item.label}</p>
-                  <p className="text-base font-medium leading-tight tracking-tighter text-slate-900 text-clip-fix">{formatAmount(item.value)}</p>
+              <div key={item.id} className={cn("bg-slate-100 p-3 relative overflow-hidden", isLastOdd ? "col-span-2" : "")}>
+                <div className={cn("absolute -right-4 -top-4 w-16 h-16 rounded-full blur-xl", item.gradient)}></div>
+                <div className="relative z-10 flex items-center gap-3">
+                  <div className={cn("w-9 h-9 rounded-md flex items-center justify-center shrink-0", item.bg, item.color)}>
+                    <item.icon size={18} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-slate-500 text-xs font-medium leading-tight mb-1 text-clip-fix">{item.label}</p>
+                    <p className="text-base font-medium leading-tight tracking-tighter text-slate-900 text-clip-fix">{formatAmount(item.value)}</p>
+                  </div>
                 </div>
               </div>
             );
@@ -1272,14 +1277,17 @@ const SummaryGrid = React.memo(({ totals, sections }: { totals: any, sections: R
 
       {/* Compact Savings (Savings) */}
       {sections.summary_savings_total && (
-        <div className="bg-slate-100 border border-slate-200 p-3 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-md bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm text-indigo-600 flex items-center justify-center">
-              <PiggyBank size={20} />
-            </div>
-            <div>
-              <p className="text-slate-500 text-xs font-medium leading-tight mb-1 text-clip-fix">{t('savingsTotal')}</p>
-              <p className="text-xl font-medium text-slate-900 leading-tight tracking-tighter text-clip-fix">{formatAmount(joma)}</p>
+        <div className="bg-slate-100 border border-slate-200 p-3 rounded-lg relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-indigo-500/20 rounded-full blur-xl"></div>
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-md bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm text-indigo-600 flex items-center justify-center">
+                <PiggyBank size={20} />
+              </div>
+              <div>
+                <p className="text-slate-500 text-xs font-medium leading-tight mb-1 text-clip-fix">{t('savingsTotal')}</p>
+                <p className="text-xl font-medium text-slate-900 leading-tight tracking-tighter text-clip-fix">{formatAmount(joma)}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -1452,7 +1460,8 @@ const TransactionList = React.memo(({
   hideHeader, 
   hideBanner, 
   showGrouping = true,
-  containerTitle
+  containerTitle,
+  className
 }: { 
   transactions: any[], 
   onTransactionClick: (tx: any) => void, 
@@ -1461,7 +1470,8 @@ const TransactionList = React.memo(({
   hideHeader?: boolean, 
   hideBanner?: boolean,
   showGrouping?: boolean,
-  containerTitle?: string
+  containerTitle?: string,
+  className?: string
 }) => {
   const { t, language } = useLanguage();
   const [activeOptionsIndex, setActiveOptionsIndex] = useState<string | null>(null);
@@ -1537,7 +1547,7 @@ const TransactionList = React.memo(({
   }
 
   return (
-    <div className={cn("pb-32", "mt-3")}>
+    <div className={cn("pb-32", className)}>
       {!hideHeader && (
         <div className="flex items-center justify-between mb-4 px-6">
           <h3 className="text-slate-900 font-medium text-xl">{t('history')}</h3>
@@ -1550,7 +1560,7 @@ const TransactionList = React.memo(({
       )}
       
       <div className="px-6">
-        <div className="bg-white rounded-lg border border-slate-200 flex flex-col">
+        <div className="bg-white rounded-lg border border-slate-200 flex flex-col overflow-hidden">
           {containerTitle && (
             <div className="px-4 py-3 border-b border-slate-50 bg-white">
               <h3 className="text-slate-800 font-medium text-base">{containerTitle}</h3>
@@ -1844,6 +1854,7 @@ const HomeView = React.memo(({
           hideBanner={!sections.banner} 
           showGrouping={false} 
           containerTitle={language === 'bn' ? 'সাম্প্রতিক' : 'Recent'}
+          className="mt-3"
         />
       )}
 
@@ -1869,6 +1880,23 @@ const HomeView = React.memo(({
   );
 });
 
+const getActiveChipStyle = (type: string) => {
+  switch(type) {
+    case 'income': return 'bg-emerald-500 text-white';
+    case 'expense': return 'bg-rose-500 text-white';
+    case 'transfer': return 'bg-purple-500 text-white';
+    case 'debt': 
+    case 'dena': return 'bg-orange-500 text-white';
+    case 'taken': 
+    case 'paona': return 'bg-amber-500 text-white';
+    case 'given': return 'bg-teal-500 text-white';
+    case 'savings': 
+    case 'joma': return 'bg-blue-500 text-white';
+    case 'invest': return 'bg-indigo-500 text-white';
+    default: return 'bg-slate-800 text-white';
+  }
+};
+
 const TransactionsView = React.memo(({ 
   transactions, 
   onTransactionClick, 
@@ -1888,12 +1916,14 @@ const TransactionsView = React.memo(({
   onEditTransaction?: (tx: any) => void,
   onDeleteTransaction?: (id: string) => void
 }) => {
-  const { t, formatAmount } = useLanguage();
+  const { t, formatAmount, language } = useLanguage();
   const [filterType, setFilterType] = useState<string>('all');
-  const [activeRange, setActiveRange] = useState('month');
+  const [activeRange, setActiveRange] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+  const [showFilters, setShowFilters] = useState(false);
   
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(tx => {
+    let result = transactions.filter(tx => {
       // Type Filter
       let typeMatch = true;
       if (filterType === 'income') typeMatch = tx.type === 'income';
@@ -1906,6 +1936,23 @@ const TransactionsView = React.memo(({
       else if (filterType === 'invest') typeMatch = tx.type === 'invest';
       
       if (!typeMatch) return false;
+
+      // Date Range Filter
+      if (activeRange !== 'all') {
+        const txDate = new Date(tx.date);
+        const today = new Date();
+        if (activeRange === 'today') {
+          if (txDate.toDateString() !== today.toDateString()) return false;
+        } else if (activeRange === 'week') {
+          const weekAgo = new Date();
+          weekAgo.setDate(today.getDate() - 7);
+          if (txDate < weekAgo) return false;
+        } else if (activeRange === 'month') {
+          if (txDate.getMonth() !== today.getMonth() || txDate.getFullYear() !== today.getFullYear()) return false;
+        } else if (activeRange === 'year') {
+          if (txDate.getFullYear() !== today.getFullYear()) return false;
+        }
+      }
 
       // Search Filter
       if (searchQuery) {
@@ -1920,7 +1967,18 @@ const TransactionsView = React.memo(({
       }
       return true;
     });
-  }, [transactions, filterType, searchQuery]);
+
+    // Sort
+    result.sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (sortBy === 'oldest') return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (sortBy === 'highest') return b.amount - a.amount;
+      if (sortBy === 'lowest') return a.amount - b.amount;
+      return 0;
+    });
+
+    return result;
+  }, [transactions, filterType, searchQuery, activeRange, sortBy]);
 
   const stats = useMemo(() => {
     const inc = filteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -1928,50 +1986,123 @@ const TransactionsView = React.memo(({
     return { inc, exp, count: filteredTransactions.length };
   }, [filteredTransactions]);
 
+  const currentDate = new Date();
+  const currentMonthYear = currentDate.toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { month: 'long', year: 'numeric' });
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pb-32 bg-slate-50 min-h-screen">
       <div className="px-6 pt-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-slate-900 font-medium text-2xl">{t('history')}</h2>
-          <div className="flex bg-slate-200 p-1 rounded-lg">
-            {['week', 'month', 'year'].map(r => (
-              <button 
-                key={r}
-                onClick={() => setActiveRange(r)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium uppercase transition-all",
-                  activeRange === r ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-                )}
-              >
-                {t(r)}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-slate-500">{currentMonthYear}</span>
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                "p-2 rounded-xl transition-all flex items-center justify-center",
+                showFilters ? "bg-indigo-600 text-white shadow-md" : "bg-white text-slate-600 border border-slate-200 shadow-sm hover:bg-slate-50"
+              )}
+            >
+              <SlidersHorizontal size={18} />
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-emerald-500 rounded-lg p-4 text-white shadow-lg shadow-emerald-500/20">
-            <p className="text-xs font-medium uppercase opacity-80 mb-1">{t('filteredIncome')}</p>
-            <h4 className="text-xl font-medium">{formatAmount(stats.inc)}</h4>
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden mb-6"
+            >
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm space-y-5">
+                {/* Date Range */}
+                <div>
+                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 block">Date Range</label>
+                  <div className="flex flex-wrap gap-2">
+                    {['all', 'today', 'week', 'month', 'year'].map(r => (
+                      <button 
+                        key={r}
+                        onClick={() => setActiveRange(r)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all",
+                          activeRange === r ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100"
+                        )}
+                      >
+                        {r === 'all' ? 'All Time' : t(r) || r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sort By */}
+                <div>
+                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 block">Sort By</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'newest', label: 'Newest First' },
+                      { id: 'oldest', label: 'Oldest First' },
+                      { id: 'highest', label: 'Highest Amount' },
+                      { id: 'lowest', label: 'Lowest Amount' }
+                    ].map(s => (
+                      <button 
+                        key={s.id}
+                        onClick={() => setSortBy(s.id)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                          sortBy === s.id ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100"
+                        )}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="grid grid-cols-2 gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden mb-2">
+          <div className="bg-slate-100 p-3 relative overflow-hidden">
+            <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-500/20 rounded-full blur-xl"></div>
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-md flex items-center justify-center shrink-0 bg-emerald-500/10 backdrop-blur-xl border border-white shadow-sm text-emerald-600">
+                <ArrowDownLeft size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-slate-500 text-xs font-medium leading-tight mb-1 text-clip-fix">{t('filteredIncome')}</p>
+                <p className="text-base font-medium leading-tight tracking-tighter text-slate-900 text-clip-fix">{formatAmount(stats.inc)}</p>
+              </div>
+            </div>
           </div>
-          <div className="bg-rose-500 rounded-lg p-4 text-white shadow-lg shadow-rose-500/20">
-            <p className="text-xs font-medium uppercase opacity-80 mb-1">{t('filteredExpense')}</p>
-            <h4 className="text-xl font-medium">{formatAmount(stats.exp)}</h4>
+          <div className="bg-slate-100 p-3 relative overflow-hidden">
+            <div className="absolute -right-4 -top-4 w-16 h-16 bg-rose-500/20 rounded-full blur-xl"></div>
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-md flex items-center justify-center shrink-0 bg-rose-500/10 backdrop-blur-xl border border-white shadow-sm text-rose-600">
+                <ArrowUpRight size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-slate-500 text-xs font-medium leading-tight mb-1 text-clip-fix">{t('filteredExpense')}</p>
+                <p className="text-base font-medium leading-tight tracking-tighter text-slate-900 text-clip-fix">{formatAmount(stats.exp)}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="px-6 mb-6 overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-2">
+      <div className="px-6 overflow-x-auto no-scrollbar pb-2">
+        <div className="flex w-max items-center gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden">
           {['all', 'income', 'expense', 'transfer', 'debt', 'taken', 'given', 'savings', 'invest'].map(type => (
             <button
               key={type}
               onClick={() => setFilterType(type)}
               className={cn(
-                "px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all",
+                "px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all",
                 filterType === type 
-                  ? "bg-zinc-900 text-zinc-50 shadow-lg shadow-zinc-900/20" 
-                  : "bg-slate-500/10 backdrop-blur-md text-slate-600 border border-slate-200/50 hover:bg-slate-500/20 shadow-sm"
+                  ? getActiveChipStyle(type)
+                  : "bg-slate-100 text-slate-600 hover:bg-white"
               )}
             >
               {t(type)}
@@ -1987,6 +2118,7 @@ const TransactionsView = React.memo(({
         onDelete={onDeleteTransaction}
         hideHeader={true}
         hideBanner={true}
+        className="mt-0"
       />
     </motion.div>
   );
@@ -2432,16 +2564,16 @@ const ManagementView = React.memo(({ onOpenDetail, onAddNew, searchQuery, setSea
       <div className="px-6 pt-6 space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-slate-900 font-medium text-2xl">{t('manage')}</h2>
-          <div className="bg-white rounded-lg p-1 shadow-sm border border-slate-100 flex items-center gap-1">
+          <div className="flex w-max items-center gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden">
             <button 
               onClick={() => setViewMode('grid')}
-              className={cn("p-2 rounded-lg transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+              className={cn("px-4 py-2.5 transition-all", viewMode === 'grid' ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-white")}
             >
               <LayoutGrid size={18} />
             </button>
             <button 
               onClick={() => setViewMode('list')}
-              className={cn("p-2 rounded-lg transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+              className={cn("px-4 py-2.5 transition-all", viewMode === 'list' ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-white")}
             >
               <List size={18} />
             </button>
@@ -2948,7 +3080,7 @@ const SubCategoryTransactionsView = React.memo(({
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
       className="fixed inset-0 bg-white z-[270] flex flex-col"
     >
-      <div className="px-6 py-8 flex items-center justify-between border-b border-slate-50">
+      <div className="px-6 pt-8 pb-4 flex items-center justify-between border-b border-slate-50">
         <button 
           onClick={onClose}
           className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
@@ -3021,7 +3153,7 @@ const ContactDetailView = React.memo(({
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
       className="fixed inset-0 bg-white z-[280] flex flex-col"
     >
-      <div className="px-6 py-8 flex items-center justify-between border-b border-slate-50">
+      <div className="px-6 pt-8 pb-4 flex items-center justify-between border-b border-slate-50">
         <button 
           onClick={onClose}
           className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
@@ -3078,7 +3210,7 @@ const ContactDetailView = React.memo(({
         </div>
       </div>
 
-      <div className="px-6 mb-6">
+      <div className="px-6 mb-2">
         <div className="flex gap-2 p-1.5 bg-slate-100 rounded-lg">
           <button 
             onClick={() => setActiveFilter('dena')}
@@ -3160,7 +3292,7 @@ const CategoryDetailView = React.memo(({
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
       className="fixed inset-0 bg-white z-[260] flex flex-col"
     >
-      <div className="px-6 py-8 flex items-center justify-between border-b border-slate-50">
+      <div className="px-6 pt-8 pb-4 flex items-center justify-between border-b border-slate-50">
         <button 
           onClick={onClose}
           className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
@@ -3175,7 +3307,7 @@ const CategoryDetailView = React.memo(({
       </div>
 
       {/* Tabs */}
-      <div className="px-6 py-4 flex gap-4 border-b border-slate-50">
+      <div className="px-6 pt-4 pb-2 flex gap-4 border-b border-slate-50">
         <button 
           onClick={() => setActiveTab('transactions')}
           className={cn(
@@ -3790,8 +3922,8 @@ const ManagementDetailView = React.memo(({
         </div>
       </div>
 
-      <div className="px-6 py-4 bg-white border-b border-slate-100 sticky top-[89px] z-10">
-        <div className={cn("relative group", (label === 'Categories' || label === 'Sub Categories') && "mb-4")}>
+      <div className="px-6 pt-4 pb-2 bg-white border-b border-slate-100 sticky top-[89px] z-10">
+        <div className={cn("relative group", (label === 'Categories' || label === 'Sub Categories') && "mb-2")}>
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
           <input 
             type="text" 
@@ -3811,51 +3943,55 @@ const ManagementDetailView = React.memo(({
         </div>
 
         {label === 'Categories' && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-            {['all', 'expense', 'income', 'dena', 'paona', 'joma', 'invest'].map(type => (
-              <button
-                key={type}
-                onClick={() => setActiveType(type as any)}
-                className={cn(
-                  "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
-                  activeType === type 
-                    ? "bg-slate-900 text-white" 
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                )}
-              >
-                {t(type) || type.charAt(0).toUpperCase() + type.slice(1)}
-              </button>
-            ))}
+          <div className="overflow-x-auto no-scrollbar pb-2">
+            <div className="flex w-max items-center gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden">
+              {['all', 'expense', 'income', 'dena', 'paona', 'joma', 'invest'].map(type => (
+                <button
+                  key={type}
+                  onClick={() => setActiveType(type as any)}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all",
+                    activeType === type 
+                      ? getActiveChipStyle(type)
+                      : "bg-slate-100 text-slate-600 hover:bg-white"
+                  )}
+                >
+                  {t(type) || type.charAt(0).toUpperCase() + type.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
         {label === 'Sub Categories' && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-            <button
-              onClick={() => setSubCategoryFilter('All')}
-              className={cn(
-                "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
-                subCategoryFilter === 'All'
-                  ? "bg-slate-900 text-white" 
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              )}
-            >
-              {t('all') || 'All'}
-            </button>
-            {Object.values(data.categories).flat().map((cat: any) => (
+          <div className="overflow-x-auto no-scrollbar pb-2">
+            <div className="flex w-max items-center gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden">
               <button
-                key={cat.id || cat.name}
-                onClick={() => setSubCategoryFilter(cat.name)}
+                onClick={() => setSubCategoryFilter('All')}
                 className={cn(
-                  "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
-                  subCategoryFilter === cat.name
-                    ? "bg-slate-900 text-white" 
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  "px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all",
+                  subCategoryFilter === 'All'
+                    ? "bg-slate-800 text-white" 
+                    : "bg-slate-100 text-slate-600 hover:bg-white"
                 )}
               >
-                {cat.name}
+                {t('all') || 'All'}
               </button>
-            ))}
+              {Array.from(new Map(Object.entries(data.categories).flatMap(([type, cats]: [string, any]) => cats.map((c: any) => [c.name, {...c, type}]))).values()).map((cat: any) => (
+                <button
+                  key={cat.id || cat.name}
+                  onClick={() => setSubCategoryFilter(cat.name)}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all",
+                    subCategoryFilter === cat.name
+                      ? getActiveChipStyle(cat.type)
+                      : "bg-slate-100 text-slate-600 hover:bg-white"
+                  )}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -3885,7 +4021,7 @@ const ManagementDetailView = React.memo(({
         </div>
       )}
 
-      <div className="p-6 pb-32">
+      <div className="px-6 pt-2 pb-32">
         {filteredItems.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
@@ -4053,7 +4189,7 @@ const ManagementDetailView = React.memo(({
           <div className="space-y-6">
             {groupedSubCategories ? (
               Object.entries(groupedSubCategories).map(([parent, items]: [string, any], groupIdx) => (
-                <div key={parent} className="bg-white rounded-lg border border-slate-100 shadow-sm">
+                <div key={parent} className="bg-white rounded-lg border border-slate-100 shadow-sm overflow-hidden">
                   <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center text-slate-500">
@@ -4071,7 +4207,7 @@ const ManagementDetailView = React.memo(({
                 </div>
               ))
             ) : (
-              <div className="bg-white rounded-lg border border-slate-200">
+              <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                 {filteredItems.length > 0 ? (
                   <div className="flex flex-col">
                     {filteredItems.map((item: any, idx: number) => renderItem(item, idx, idx === filteredItems.length - 1))}
@@ -4644,7 +4780,7 @@ const ProfileView = React.memo(({ transactions, managementData, onClose }: { tra
           <div className="relative">
             <div className="w-24 h-24 rounded-full overflow-hidden shadow-inner border-2 border-emerald-100 flex items-center justify-center bg-emerald-50">
               {profileImage ? (
-                <img src={profileImage} alt={profileName} className="w-full h-full object-cover" />
+                <img src={profileImage} alt={profileName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <span className="text-4xl font-medium text-emerald-600">{profileName.charAt(0).toUpperCase()}</span>
               )}
@@ -5284,7 +5420,9 @@ const SettingsView = React.memo(({
   backupNetwork,
   setBackupNetwork,
   isBackingUp,
-  isRestoring
+  isRestoring,
+  backupProgress,
+  restoreProgress
 }: { 
   onOpenWorkspace: (id: string) => void, 
   onOpenDetail: (label: string) => void,
@@ -5315,7 +5453,9 @@ const SettingsView = React.memo(({
   backupNetwork: string,
   setBackupNetwork: (val: string) => void,
   isBackingUp: boolean,
-  isRestoring: boolean
+  isRestoring: boolean,
+  backupProgress: number,
+  restoreProgress: number
 }) => {
   const [privacyMode, setPrivacyMode] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
@@ -5336,7 +5476,7 @@ const SettingsView = React.memo(({
       >
         <div className="flex items-center gap-4">
           {profileImage ? (
-            <img src={profileImage} alt={profileName} className="w-12 h-12 rounded-full object-cover border border-slate-200" />
+            <img src={profileImage} alt={profileName} className="w-12 h-12 rounded-full object-cover border border-slate-200" referrerPolicy="no-referrer" />
           ) : (
             <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-medium border border-slate-200">
               {profileName.charAt(0).toUpperCase()}
@@ -5399,8 +5539,8 @@ const SettingsView = React.memo(({
               </div>
               <button 
                 onClick={onBackupToDrive}
-                disabled={isBackingUp}
-                className={`w-full flex items-center justify-between p-4 border-b border-slate-100 transition-colors ${isBackingUp ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}`}
+                disabled={isBackingUp || isRestoring}
+                className={`w-full flex items-center justify-between p-4 border-b border-slate-100 transition-colors ${isBackingUp || isRestoring ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}`}
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-[0.85rem] bg-blue-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-blue-500">
@@ -5413,6 +5553,24 @@ const SettingsView = React.memo(({
                 </div>
                 {!isBackingUp && <ChevronRight size={16} className="text-slate-400" />}
               </button>
+
+              {/* Progress Bar (Visible only during backup or restore) */}
+              {(isBackingUp || isRestoring) && (
+                <div className="px-4 py-2 bg-slate-50 border-b border-slate-100">
+                  <div className="flex justify-between text-[10px] font-medium text-slate-500 mb-1">
+                    <span>{isBackingUp ? 'Backing up data...' : 'Restoring data...'}</span>
+                    <span>{isBackingUp ? backupProgress : restoreProgress}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <motion.div 
+                      className={`h-full rounded-full ${isBackingUp ? 'bg-blue-500' : 'bg-purple-500'}`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${isBackingUp ? backupProgress : restoreProgress}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between p-4 border-b border-slate-100">
                 <div className="flex items-center gap-4">
@@ -5457,23 +5615,6 @@ const SettingsView = React.memo(({
                   </select>
                 </div>
               )}
-
-              <button 
-                onClick={onRestoreFromDrive}
-                disabled={isRestoring}
-                className={`w-full flex items-center justify-between p-4 transition-colors ${isRestoring ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-[0.85rem] bg-purple-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-purple-500">
-                    {isRestoring ? <Loader2 size={20} className="animate-spin" /> : <CloudDownload size={20} />}
-                  </div>
-                  <div className="text-left">
-                    <h4 className="text-slate-900 font-medium text-sm">{isRestoring ? 'Restoring...' : (t('restoreNow') || 'Restore Now')}</h4>
-                    <p className="text-slate-500 text-xs">{t('downloadFromDrive') || 'Download data from Drive'}</p>
-                  </div>
-                </div>
-                {!isRestoring && <ChevronRight size={16} className="text-slate-400" />}
-              </button>
             </>
           )}
         </div>
@@ -6266,51 +6407,55 @@ const SelectionModal: React.FC<{
         </div>
 
         {modalType === 'category' && managementData && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
-            {['all', 'expense', 'income', 'dena', 'paona', 'joma', 'invest'].map(type => (
-              <button
-                key={type}
-                onClick={() => setActiveType(type as any)}
-                className={cn(
-                  "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
-                  activeType === type 
-                    ? "bg-slate-900 text-white" 
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                )}
-              >
-                {t(type) || type.charAt(0).toUpperCase() + type.slice(1)}
-              </button>
-            ))}
+          <div className="overflow-x-auto no-scrollbar pb-2 mb-4">
+            <div className="flex w-max items-center gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden">
+              {['all', 'expense', 'income', 'dena', 'paona', 'joma', 'invest'].map(type => (
+                <button
+                  key={type}
+                  onClick={() => setActiveType(type as any)}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all",
+                    activeType === type 
+                      ? getActiveChipStyle(type)
+                      : "bg-slate-100 text-slate-600 hover:bg-white"
+                  )}
+                >
+                  {t(type) || type.charAt(0).toUpperCase() + type.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
         {modalType === 'subCategory' && managementData && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
-            <button
-              onClick={() => setSubCategoryFilter('All')}
-              className={cn(
-                "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
-                subCategoryFilter === 'All'
-                  ? "bg-slate-900 text-white" 
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              )}
-            >
-              {t('all') || 'All'}
-            </button>
-            {Object.values(managementData.categories).flat().map((cat: any) => (
+          <div className="overflow-x-auto no-scrollbar pb-2">
+            <div className="flex w-max items-center gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden">
               <button
-                key={cat.id || cat.name}
-                onClick={() => setSubCategoryFilter(cat.name)}
+                onClick={() => setSubCategoryFilter('All')}
                 className={cn(
-                  "px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors",
-                  subCategoryFilter === cat.name
-                    ? "bg-slate-900 text-white" 
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                )}
+                  "px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all",
+                  subCategoryFilter === 'All'
+                    ? "bg-slate-800 text-white" 
+                    : "bg-slate-100 text-slate-600 hover:bg-white"
+              )}
               >
-                {cat.name}
+                {t('all') || 'All'}
               </button>
-            ))}
+              {Array.from(new Map(Object.entries(managementData.categories).flatMap(([type, cats]: [string, any]) => cats.map((c: any) => [c.name, {...c, type}]))).values()).map((cat: any) => (
+                <button
+                  key={cat.id || cat.name}
+                  onClick={() => setSubCategoryFilter(cat.name)}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all",
+                    subCategoryFilter === cat.name
+                      ? getActiveChipStyle(cat.type)
+                      : "bg-slate-100 text-slate-600 hover:bg-white"
+                  )}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -8137,6 +8282,8 @@ export default function App() {
 
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [backupProgress, setBackupProgress] = useState(0);
+  const [restoreProgress, setRestoreProgress] = useState(0);
 
   const [profileName, setProfileName] = useState<string>(() => {
     return localStorage.getItem('profileName') || '';
@@ -8170,17 +8317,38 @@ export default function App() {
       setSession(session);
       if (session) {
         // Fetch profile if session exists
-        supabase.from('user_settings').select('id, name').eq('id', session.user.id).single().then(({ data, error }) => {
+        supabase.from('user_settings').select('id, name, google_refresh_token').eq('id', session.user.id).single().then(({ data, error }) => {
           if (data && !error) {
             console.log('Profile found in Supabase:', data.name);
+            if (data.google_refresh_token) {
+              setGoogleTokens((prev: any) => {
+                const merged = { ...prev, refresh_token: data.google_refresh_token };
+                localStorage.setItem('google_tokens', JSON.stringify(merged));
+                return merged;
+              });
+            }
             if (data.name && (!profileName || profileName.trim() === '')) {
               setProfileName(data.name);
               localStorage.setItem('profileName', data.name);
             }
+            
+            // Try to get avatar from Google metadata if local image is empty
+            const avatarUrl = session.user?.user_metadata?.avatar_url || session.user?.user_metadata?.picture;
+            if (avatarUrl && (!profileImage || profileImage.trim() === '')) {
+              setProfileImage(avatarUrl);
+              localStorage.setItem('profileImage', avatarUrl);
+            }
+            
             setOnboardingComplete(true);
             localStorage.setItem('onboarding_complete', 'true');
           } else if (error) {
             console.log('No profile found in Supabase or error:', error.message);
+            // Even if no profile in DB, try to get avatar from Google metadata
+            const avatarUrl = session.user?.user_metadata?.avatar_url || session.user?.user_metadata?.picture;
+            if (avatarUrl && (!profileImage || profileImage.trim() === '')) {
+              setProfileImage(avatarUrl);
+              localStorage.setItem('profileImage', avatarUrl);
+            }
           }
           setIsProfileLoaded(true);
         });
@@ -8204,15 +8372,37 @@ export default function App() {
       }
       setSession(session);
       if (session) {
-        supabase.from('user_settings').select('id, name').eq('id', session.user.id).single().then(({ data, error }) => {
+        supabase.from('user_settings').select('id, name, google_refresh_token').eq('id', session.user.id).single().then(({ data, error }) => {
           if (data && !error) {
             console.log('Profile found in Supabase (auth change):', data.name);
+            if (data.google_refresh_token) {
+              setGoogleTokens((prev: any) => {
+                const merged = { ...prev, refresh_token: data.google_refresh_token };
+                localStorage.setItem('google_tokens', JSON.stringify(merged));
+                return merged;
+              });
+            }
             if (data.name && (!profileName || profileName.trim() === '')) {
               setProfileName(data.name);
               localStorage.setItem('profileName', data.name);
             }
+            
+            // Try to get avatar from Google metadata if local image is empty
+            const avatarUrl = session.user?.user_metadata?.avatar_url || session.user?.user_metadata?.picture;
+            if (avatarUrl && (!profileImage || profileImage.trim() === '')) {
+              setProfileImage(avatarUrl);
+              localStorage.setItem('profileImage', avatarUrl);
+            }
+            
             setOnboardingComplete(true);
             localStorage.setItem('onboarding_complete', 'true');
+          } else if (error) {
+            // Even if no profile in DB, try to get avatar from Google metadata
+            const avatarUrl = session.user?.user_metadata?.avatar_url || session.user?.user_metadata?.picture;
+            if (avatarUrl && (!profileImage || profileImage.trim() === '')) {
+              setProfileImage(avatarUrl);
+              localStorage.setItem('profileImage', avatarUrl);
+            }
           }
           setIsProfileLoaded(true);
         });
@@ -8251,9 +8441,19 @@ export default function App() {
     }
   }, [session, isProfileLoaded, onboardingComplete, profileName]);
 
-  const handleDisconnectGoogle = () => {
+  const handleDisconnectGoogle = async () => {
     setGoogleTokens(null);
     localStorage.removeItem('google_tokens');
+    if (session?.user?.id) {
+      try {
+        await supabase.from('user_settings').upsert({
+          id: session.user.id,
+          google_refresh_token: null
+        }, { onConflict: 'id' });
+      } catch (err) {
+        console.error('Failed to remove refresh token from Supabase:', err);
+      }
+    }
     alert('Google Drive disconnected.');
   };
 
@@ -8513,6 +8713,7 @@ export default function App() {
 
   const handleConnectGoogle = useCallback(async () => {
     try {
+      setPendingRestoreAfterAuth(true);
       const response = await fetch('/api/auth/google/url');
       const { url } = await response.json();
       window.open(url, 'google_auth', 'width=600,height=700');
@@ -8535,7 +8736,20 @@ export default function App() {
       return;
     }
     
-    if (!silent) setIsBackingUp(true);
+    if (!silent) {
+      setIsBackingUp(true);
+      setBackupProgress(0);
+    }
+    
+    let progressInterval: any;
+    if (!silent) {
+      progressInterval = setInterval(() => {
+        setBackupProgress(prev => {
+          if (prev >= 90) return prev;
+          return prev + Math.floor(Math.random() * 10) + 5;
+        });
+      }, 500);
+    }
     
     const backupData = {
       transactions,
@@ -8560,7 +8774,18 @@ export default function App() {
       timestamp: new Date().toISOString()
     };
 
-    console.log('Backup data prepared, sending to server...');
+    const dataSize = new Blob([JSON.stringify(backupData)]).size;
+    console.log(`Backup data prepared. Size: ${(dataSize / 1024).toFixed(2)} KB`);
+    
+    if (dataSize > 4 * 1024 * 1024) {
+      console.warn('Backup data is very large. This might fail on some hosting providers.');
+      if (!silent && !confirm('Your backup data is quite large (over 4MB). This might fail depending on your connection or hosting limits. Do you want to continue?')) {
+        setIsBackingUp(false);
+        return;
+      }
+    }
+
+    console.log('Sending backup to server...');
 
     try {
       const response = await fetch('/api/drive/backup', {
@@ -8573,16 +8798,26 @@ export default function App() {
         })
       });
       
-      const result = await response.json().catch(() => ({ error: 'Failed to parse server response' }));
+      let result;
+      const responseText = await response.text();
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse server response as JSON:', responseText);
+        throw new Error('Server returned an invalid response. Please check the server logs.');
+      }
       
       if (!response.ok) {
-        throw new Error(result.error || `Server responded with ${response.status}`);
+        throw new Error(result.error || `Server error (${response.status}): ${responseText.substring(0, 100)}`);
       }
 
       console.log('Backup server response:', result);
 
       if (result.success) {
-        if (!silent) alert('Backup successful!');
+        if (!silent) {
+          setBackupProgress(100);
+          setTimeout(() => alert('Backup successful!'), 300);
+        }
       } else {
         throw new Error(result.error || 'Unknown server error');
       }
@@ -8594,7 +8829,13 @@ export default function App() {
       }
       if (!silent) alert('Backup failed: ' + msg);
     } finally {
-      if (!silent) setIsBackingUp(false);
+      if (!silent) {
+        if (progressInterval) clearInterval(progressInterval);
+        setTimeout(() => {
+          setIsBackingUp(false);
+          setBackupProgress(0);
+        }, 500);
+      }
     }
   }, [googleTokens, transactions, managementData, profileName, profileImage, profileEmail, language, currency, darkMode, widgetEnabled, floatingBubbleEnabled, homeSections, autoBackup, backupNetwork, session]);
 
@@ -8613,6 +8854,15 @@ export default function App() {
     }
 
     setIsRestoring(true);
+    setRestoreProgress(0);
+    
+    const progressInterval = setInterval(() => {
+      setRestoreProgress(prev => {
+        if (prev >= 90) return prev;
+        return prev + Math.floor(Math.random() * 10) + 5;
+      });
+    }, 500);
+    
     const fileName = `finance_backup_${session?.user?.id || 'default'}.json`;
     console.log('Restoring file:', fileName);
 
@@ -8635,7 +8885,17 @@ export default function App() {
       console.log('Restore successful, data received.');
 
       if (result.data) {
-        const data = result.data;
+        let data = result.data;
+        if (typeof data === 'string') {
+          try {
+            data = JSON.parse(data);
+          } catch (e) {
+            console.error('Failed to parse backup data string:', e);
+            throw new Error('Backup file is corrupted or invalid format.');
+          }
+        }
+        
+        console.log('Parsed restore data keys:', Object.keys(data));
         
         // Restore Transactions
         if (data.transactions) {
@@ -8724,7 +8984,12 @@ export default function App() {
           localStorage.setItem('onboarding_data', JSON.stringify(data.onboarding));
         }
 
-        alert('Restore successful! Your data and profile have been updated.');
+        // Reload page to apply all changes
+        setRestoreProgress(100);
+        setTimeout(() => {
+          alert('Restore successful! Your data and profile have been updated.');
+          window.location.reload();
+        }, 300);
       } else {
         throw new Error(result.error || 'No backup data found or unknown error');
       }
@@ -8732,15 +8997,32 @@ export default function App() {
       console.error('Restore failed:', error);
       alert('Restore failed: ' + error.message);
     } finally {
-      setIsRestoring(false);
+      clearInterval(progressInterval);
+      setTimeout(() => {
+        setIsRestoring(false);
+        setRestoreProgress(0);
+      }, 500);
     }
   }, [googleTokens, session]);
 
   // Google OAuth Listener
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
         const newTokens = event.data.tokens;
+        
+        if (newTokens.refresh_token && session?.user?.id) {
+          try {
+            await supabase.from('user_settings').upsert({
+              id: session.user.id,
+              google_refresh_token: newTokens.refresh_token
+            }, { onConflict: 'id' });
+            console.log('Saved Google refresh token to Supabase');
+          } catch (err) {
+            console.error('Failed to save refresh token to Supabase:', err);
+          }
+        }
+
         setGoogleTokens((prev: any) => {
           // Merge tokens to preserve refresh_token if it's missing in the new ones
           const merged = { ...prev, ...newTokens };
@@ -8759,7 +9041,7 @@ export default function App() {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [pendingRestoreAfterAuth, handleRestoreFromDrive]);
+  }, [pendingRestoreAfterAuth, handleRestoreFromDrive, session]);
 
   const calculateTotals = () => {
     let income = 0;
@@ -9207,13 +9489,25 @@ export default function App() {
                   <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
                     <Loader2 size={32} className="animate-spin" />
                   </div>
-                  <div className="text-center">
+                  <div className="text-center w-full">
                     <h3 className="text-slate-900 font-bold text-xl mb-1">
                       {isBackingUp ? (language === 'bn' ? 'ব্যাকআপ হচ্ছে...' : 'Backing up...') : (language === 'bn' ? 'রিস্টোর হচ্ছে...' : 'Restoring...')}
                     </h3>
-                    <p className="text-slate-500 text-sm">
+                    <p className="text-slate-500 text-sm mb-4">
                       {language === 'bn' ? 'দয়া করে অপেক্ষা করুন' : 'Please wait a moment'}
                     </p>
+                    
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <motion.div 
+                        className={`h-full rounded-full ${isBackingUp ? 'bg-blue-500' : 'bg-purple-500'}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${isBackingUp ? backupProgress : restoreProgress}%` }}
+                        transition={{ duration: 0.5 }}
+                      />
+                    </div>
+                    <div className="text-right mt-1 text-xs font-medium text-slate-400">
+                      {isBackingUp ? backupProgress : restoreProgress}%
+                    </div>
                   </div>
                 </motion.div>
               </motion.div>
@@ -9371,6 +9665,8 @@ export default function App() {
                     setBackupNetwork={setBackupNetwork}
                     isBackingUp={isBackingUp}
                     isRestoring={isRestoring}
+                    backupProgress={backupProgress}
+                    restoreProgress={restoreProgress}
                   />
                 ) : activeTab === 'editHome' ? (
                   <EditHomePageView 

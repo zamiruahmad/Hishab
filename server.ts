@@ -22,25 +22,34 @@ async function startServer() {
   // 1. Get Google Auth URL
   app.get('/api/auth/google/url', (req, res) => {
     const origin = req.headers.referer || req.headers.origin;
-    console.log('Auth request from origin:', origin);
+    const host = req.headers.host;
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    
+    console.log('Auth URL request:', { origin, host, protocol });
 
-    // If GOOGLE_REDIRECT_URI is not set, try to guess it from the referer
+    // If GOOGLE_REDIRECT_URI is not set, try to guess it
     let currentRedirectUri = process.env.GOOGLE_REDIRECT_URI;
-    if (!currentRedirectUri && origin) {
-      try {
-        const url = new URL(origin);
-        currentRedirectUri = `${url.protocol}//${url.host}/auth/google/callback`;
-        console.log('Guessed redirect URI:', currentRedirectUri);
-      } catch (e) {
-        console.error('Error parsing origin for redirect URI:', e);
+    if (!currentRedirectUri) {
+      if (origin) {
+        try {
+          const url = new URL(origin);
+          currentRedirectUri = `${url.protocol}//${url.host}/auth/google/callback`;
+        } catch (e) {
+          console.error('Error parsing origin for redirect URI:', e);
+        }
+      }
+      
+      if (!currentRedirectUri && host) {
+        currentRedirectUri = `${protocol}://${host}/auth/google/callback`;
       }
     }
+    
+    console.log('Using redirect URI for Auth URL:', currentRedirectUri);
 
-    // Update the client's redirect URI for this request
     const client = new google.auth.OAuth2(
       process.env.VITE_GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      currentRedirectUri || `https://${req.headers.host}/auth/google/callback`
+      currentRedirectUri
     );
 
     const scopes = [
@@ -116,14 +125,23 @@ async function startServer() {
   app.post('/api/drive/backup', async (req, res) => {
     const { tokens, data, fileName } = req.body;
 
+    console.log('Backup request received for file:', fileName);
+
     if (!tokens || !data) {
+      console.error('Backup failed: Missing tokens or data');
       return res.status(400).json({ error: 'Missing tokens or data' });
+    }
+
+    if (!process.env.GOOGLE_CLIENT_SECRET) {
+      console.error('Backup failed: GOOGLE_CLIENT_SECRET is not set in environment');
+      return res.status(500).json({ error: 'Server configuration error: GOOGLE_CLIENT_SECRET missing' });
     }
 
     try {
       const client = new google.auth.OAuth2(
         process.env.VITE_GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
       );
 
       if (!tokens.refresh_token) {
@@ -198,7 +216,8 @@ async function startServer() {
     try {
       const client = new google.auth.OAuth2(
         process.env.VITE_GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
       );
 
       if (!tokens.refresh_token) {
