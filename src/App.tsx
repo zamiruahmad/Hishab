@@ -7621,6 +7621,49 @@ const AddTransactionView = React.memo(({
   );
 });
 
+const evaluateMath = (expr: string): number => {
+  const sanitized = expr.replace(/×/g, '*').replace(/÷/g, '/');
+  const tokens = sanitized.match(/(\d+\.\d+|\d+|[+\-*/])/g);
+  if (!tokens) return 0;
+
+  const ops: string[] = [];
+  const values: number[] = [];
+
+  const applyOp = () => {
+    const op = ops.pop();
+    const b = values.pop() || 0;
+    const a = values.pop() || 0;
+    if (op === '+') values.push(a + b);
+    if (op === '-') values.push(a - b);
+    if (op === '*') values.push(a * b);
+    if (op === '/') values.push(a / b);
+  };
+
+  const precedence = (op: string) => {
+    if (op === '+' || op === '-') return 1;
+    if (op === '*' || op === '/') return 2;
+    return 0;
+  };
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (!isNaN(Number(token))) {
+      values.push(Number(token));
+    } else {
+      while (ops.length > 0 && precedence(ops[ops.length - 1]) >= precedence(token)) {
+        applyOp();
+      }
+      ops.push(token);
+    }
+  }
+
+  while (ops.length > 0) {
+    applyOp();
+  }
+
+  return values[0] || 0;
+};
+
 const CalculatorModal = ({ isOpen, onClose, onApply, initialValue }: { isOpen: boolean, onClose: () => void, onApply: (val: number) => void, initialValue: string }) => {
   const { t } = useLanguage();
   const [display, setDisplay] = useState(initialValue || '0');
@@ -7638,8 +7681,7 @@ const CalculatorModal = ({ isOpen, onClose, onApply, initialValue }: { isOpen: b
   const handleEqual = () => {
     try {
       const fullEq = equation + display;
-      // Simple eval for basic math
-      const result = eval(fullEq.replace('×', '*').replace('÷', '/'));
+      const result = evaluateMath(fullEq);
       setDisplay(result.toString());
       setEquation('');
     } catch (e) {
