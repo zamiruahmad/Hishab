@@ -51,7 +51,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (errorMessage.toLowerCase().includes('refresh token') || 
         errorMessage.includes('invalid_grant') || 
         errorMessage.includes('No refresh token is set') ||
-        errorMessage.includes('invalid_token')) {
+        errorMessage.includes('invalid_token') ||
+        errorMessage.toLowerCase().includes('invalid authentication credentials')) {
       return res.status(401).json({ 
         error: 'Google Drive connection expired or invalid. Please disconnect and reconnect Google Drive in Settings.',
         code: 'AUTH_EXPIRED'

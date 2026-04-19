@@ -64,6 +64,7 @@ import {
   CloudUpload,
   CloudDownload,
   Moon,
+  Sun,
   Award,
   Lightbulb,
   X,
@@ -939,9 +940,9 @@ const BottomBar = React.memo(({ activeTab, setActiveTab, onAddClick }: { activeT
           stiffness: 200,
           damping: 30
         }}
-        className="w-full max-w-md pointer-events-auto flex items-center justify-center gap-2"
+        className="w-full max-w-md pointer-events-auto flex items-center justify-center gap-3"
       >
-        <div className="flex-1 bg-white/90 backdrop-blur-2xl border border-white/50 p-1.5 flex items-center gap-1 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
+        <div className="h-14 bg-white/80 backdrop-blur-xl border border-slate-200/60 shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-1.5 flex items-center gap-1 rounded-full">
           {[
             { id: 'home', icon: LayoutDashboard, label: t('home') },
             { id: 'transactions', icon: ScrollText, label: t('history') },
@@ -956,26 +957,26 @@ const BottomBar = React.memo(({ activeTab, setActiveTab, onAddClick }: { activeT
                 key={item.id}
                 onClick={() => setActiveTab(item.id)} 
                 className={cn(
-                  "relative flex items-center justify-center h-11 rounded-full transition-all duration-300 ease-out overflow-hidden",
-                  isActive ? "flex-grow bg-indigo-50 text-indigo-600 px-2" : "w-10 shrink-0 text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                  "relative flex items-center justify-center h-full rounded-full transition-all duration-300 ease-out overflow-hidden",
+                  isActive ? "px-4 bg-indigo-50 text-indigo-600" : "w-11 shrink-0 bg-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-100/50"
                 )}
               >
                 <div className="relative z-10 flex items-center justify-center">
                   <Icon 
-                    size={20} 
+                    size={18} 
                     strokeWidth={isActive ? 2.5 : 2} 
                     className={cn(
                       "shrink-0 transition-transform duration-300",
-                      isActive && "scale-110 drop-shadow-sm"
+                      isActive && "scale-110"
                     )} 
                   />
                   <div 
                     className={cn(
                       "transition-all duration-300 ease-out flex items-center overflow-hidden",
-                      isActive ? "max-w-[80px] opacity-100 ml-1.5" : "max-w-0 opacity-0 ml-0"
+                      isActive ? "max-w-[80px] opacity-100 ml-2" : "max-w-0 opacity-0 ml-0"
                     )}
                   >
-                    <span className="text-[10px] font-bold tracking-wide whitespace-nowrap">
+                    <span className="text-[11px] font-semibold tracking-wide whitespace-nowrap">
                       {item.label}
                     </span>
                   </div>
@@ -988,7 +989,7 @@ const BottomBar = React.memo(({ activeTab, setActiveTab, onAddClick }: { activeT
         {/* Primary Action Button (Blue Plus) */}
         <button 
           onClick={onAddClick}
-          className="shrink-0 w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 border border-white/20 active:scale-90"
+          className="shrink-0 w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-all shadow-[0_8px_30px_rgb(79,70,229,0.3)] active:scale-90 border-2 border-white"
         >
           <Plus size={24} strokeWidth={2.5} />
         </button>
@@ -1168,8 +1169,8 @@ const UnifiedTopBar = React.memo(({
 
         {/* Action Bar */}
         {showActions && (
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
+          <div className="flex items-center h-12 bg-slate-200/80 backdrop-blur-2xl p-[1px] gap-[1px] rounded-lg overflow-hidden">
+            <div className="relative flex-1 bg-white/90 h-full flex items-center">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input 
                 type="text"
@@ -1177,18 +1178,18 @@ const UnifiedTopBar = React.memo(({
                 value={searchQuery || ''}
                 onChange={(e) => setSearchQuery?.(e.target.value)}
                 onFocus={onSearchFocus}
-                className="w-full bg-slate-100 text-slate-900 pl-10 pr-4 py-3 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-slate-200 transition-all placeholder:text-slate-400"
+                className="w-full h-full bg-transparent text-slate-900 pl-10 pr-4 text-xs font-medium outline-none transition-all placeholder:text-slate-400"
               />
             </div>
-            <button onClick={onFilter} className="p-3 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors shrink-0">
+            <button onClick={onFilter} className="w-12 h-full bg-white/90 text-slate-500 hover:text-slate-700 hover:bg-white transition-colors shrink-0 flex items-center justify-center">
               <Filter size={18} />
             </button>
-            <button onClick={onNotifications} className="p-3 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors shrink-0 relative">
+            <button onClick={onNotifications} className="w-12 h-full bg-white/90 text-slate-500 hover:text-slate-700 hover:bg-white transition-colors shrink-0 flex items-center justify-center relative">
               <Bell size={18} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+              <span className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
             </button>
             {showPdf && (
-              <button onClick={onPdfExport} className="p-3 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors shrink-0">
+              <button onClick={onPdfExport} className="w-12 h-full bg-white/90 text-slate-500 hover:text-slate-700 hover:bg-white transition-colors shrink-0 flex items-center justify-center">
                 <FileText size={18} />
               </button>
             )}
@@ -1775,73 +1776,53 @@ const HomeView = React.memo(({
       {/* Quick Actions Section */}
       {sections.quickActions !== false && (
         <div className="mt-3 px-6">
-          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar p-3 min-w-0 snap-x snap-mandatory">
-              <button onClick={() => onQuickAction('expense')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
-              <div className="w-14 h-14 rounded-full bg-rose-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-rose-500 group-hover:bg-rose-500/20 transition-all shadow-sm">
-                <Minus size={24} strokeWidth={2.5} />
-              </div>
-              <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('expense') || 'খরচ'}</span>
+          <div className="flex items-center overflow-x-auto no-scrollbar bg-slate-200/80 backdrop-blur-2xl p-[1px] gap-[1px] rounded-lg snap-x snap-mandatory">
+            <button onClick={() => onQuickAction('expense')} className="flex flex-col items-center justify-center gap-1.5 group shrink-0 w-[76px] h-[76px] snap-start bg-rose-50 hover:bg-rose-100 transition-all">
+              <Minus size={24} strokeWidth={2.5} className="text-rose-600" />
+              <span className="text-[10px] font-medium text-rose-700 truncate w-full text-center px-1">{t('expense') || 'খরচ'}</span>
             </button>
             
-            <button onClick={() => onQuickAction('income')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500/20 transition-all shadow-sm">
-                <Plus size={24} strokeWidth={2.5} />
-              </div>
-              <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('income') || 'আয়'}</span>
+            <button onClick={() => onQuickAction('income')} className="flex flex-col items-center justify-center gap-1.5 group shrink-0 w-[76px] h-[76px] snap-start bg-emerald-50 hover:bg-emerald-100 transition-all">
+              <Plus size={24} strokeWidth={2.5} className="text-emerald-600" />
+              <span className="text-[10px] font-medium text-emerald-700 truncate w-full text-center px-1">{t('income') || 'আয়'}</span>
             </button>
             
-            <button onClick={() => onQuickAction('tasks')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
-              <div className="w-14 h-14 rounded-full bg-blue-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-blue-500 group-hover:bg-blue-500/20 transition-all shadow-sm">
-                <CheckCircle2 size={24} strokeWidth={2.5} />
-              </div>
-              <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('tasks') || 'টাস্ক'}</span>
+            <button onClick={() => onQuickAction('tasks')} className="flex flex-col items-center justify-center gap-1.5 group shrink-0 w-[76px] h-[76px] snap-start bg-blue-50 hover:bg-blue-100 transition-all">
+              <CheckCircle2 size={24} strokeWidth={2.5} className="text-blue-600" />
+              <span className="text-[10px] font-medium text-blue-700 truncate w-full text-center px-1">{t('tasks') || 'টাস্ক'}</span>
             </button>
             
-            <button onClick={() => onQuickAction('debt')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
-              <div className="w-14 h-14 rounded-full bg-amber-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-amber-500 group-hover:bg-amber-500/20 transition-all shadow-sm">
-                <Users size={24} strokeWidth={2.5} />
-              </div>
-              <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('debt') || 'দেনা-পাওনা'}</span>
+            <button onClick={() => onQuickAction('debt')} className="flex flex-col items-center justify-center gap-1.5 group shrink-0 w-[76px] h-[76px] snap-start bg-amber-50 hover:bg-amber-100 transition-all">
+              <Users size={24} strokeWidth={2.5} className="text-amber-600" />
+              <span className="text-[10px] font-medium text-amber-700 truncate w-full text-center px-1">{t('debt') || 'দেনা-পাওনা'}</span>
             </button>
 
-            <button onClick={() => onQuickAction('reminder')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
-              <div className="w-14 h-14 rounded-full bg-purple-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-purple-500 group-hover:bg-purple-500/20 transition-all shadow-sm">
-                <Bell size={24} strokeWidth={2.5} />
-              </div>
-              <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('reminder') || 'রিমাইন্ডার'}</span>
+            <button onClick={() => onQuickAction('reminder')} className="flex flex-col items-center justify-center gap-1.5 group shrink-0 w-[76px] h-[76px] snap-start bg-purple-50 hover:bg-purple-100 transition-all">
+              <Bell size={24} strokeWidth={2.5} className="text-purple-600" />
+              <span className="text-[10px] font-medium text-purple-700 truncate w-full text-center px-1">{t('reminder') || 'রিমাইন্ডার'}</span>
             </button>
 
-            <button onClick={() => onQuickAction('note')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
-              <div className="w-14 h-14 rounded-full bg-indigo-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-indigo-500 group-hover:bg-indigo-500/20 transition-all shadow-sm">
-                <FileText size={24} strokeWidth={2.5} />
-              </div>
-              <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('note') || 'নোট'}</span>
+            <button onClick={() => onQuickAction('note')} className="flex flex-col items-center justify-center gap-1.5 group shrink-0 w-[76px] h-[76px] snap-start bg-indigo-50 hover:bg-indigo-100 transition-all">
+              <FileText size={24} strokeWidth={2.5} className="text-indigo-600" />
+              <span className="text-[10px] font-medium text-indigo-700 truncate w-full text-center px-1">{t('note') || 'নোট'}</span>
             </button>
 
-            <button onClick={() => onQuickAction('recurring')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px] snap-start">
-              <div className="w-14 h-14 rounded-full bg-cyan-500/10 backdrop-blur-xl border border-white flex items-center justify-center text-cyan-500 group-hover:bg-cyan-500/20 transition-all shadow-sm">
-                <Repeat size={24} strokeWidth={2.5} />
-              </div>
-              <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('recurring') || 'রিকোয়িং'}</span>
+            <button onClick={() => onQuickAction('recurring')} className="flex flex-col items-center justify-center gap-1.5 group shrink-0 w-[76px] h-[76px] snap-start bg-cyan-50 hover:bg-cyan-100 transition-all">
+              <Repeat size={24} strokeWidth={2.5} className="text-cyan-600" />
+              <span className="text-[10px] font-medium text-cyan-700 truncate w-full text-center px-1">{t('recurring') || 'রিকোয়িং'}</span>
             </button>
 
-            <button onClick={() => onQuickAction('subscription')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px]">
-              <div className="w-14 h-14 rounded-full bg-pink-500/10 backdrop-blur-md border border-pink-500/20 flex items-center justify-center text-pink-500 group-hover:bg-pink-500/20 transition-all shadow-sm">
-                <CreditCard size={24} strokeWidth={2.5} />
-              </div>
-              <span className="text-[10px] font-medium text-slate-600 truncate w-full text-center">{t('subscription') || 'সাবস্ক্রিপশন'}</span>
+            <button onClick={() => onQuickAction('subscription')} className="flex flex-col items-center justify-center gap-1.5 group shrink-0 w-[76px] h-[76px] snap-start bg-pink-50 hover:bg-pink-100 transition-all">
+              <CreditCard size={24} strokeWidth={2.5} className="text-pink-600" />
+              <span className="text-[10px] font-medium text-pink-700 truncate w-full text-center px-1">{t('subscription') || 'সাবস্ক্রিপশন'}</span>
             </button>
 
-            <button onClick={() => onQuickAction('add_shortcut')} className="flex flex-col items-center gap-2 group shrink-0 w-[70px]">
-              <div className="w-14 h-14 rounded-full bg-slate-500/5 backdrop-blur-md border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-400 group-hover:border-slate-300 group-hover:bg-slate-500/10 transition-all shadow-sm">
-                <Plus size={24} strokeWidth={2} />
-              </div>
-              <span className="text-[10px] font-medium text-slate-400 truncate w-full text-center">{t('add') || 'যোগ করুন'}</span>
+            <button onClick={() => onQuickAction('add_shortcut')} className="flex flex-col items-center justify-center gap-1.5 group shrink-0 w-[76px] h-[76px] snap-start bg-slate-50 hover:bg-slate-100 transition-all">
+              <Plus size={24} strokeWidth={2.5} className="text-slate-600" />
+              <span className="text-[10px] font-medium text-slate-700 truncate w-full text-center px-1">{t('add') || 'যোগ করুন'}</span>
             </button>
           </div>
         </div>
-      </div>
       )}
       
       {sections.activity && (
@@ -1918,10 +1899,39 @@ const TransactionsView = React.memo(({
 }) => {
   const { t, formatAmount, language } = useLanguage();
   const [filterType, setFilterType] = useState<string>('all');
-  const [activeRange, setActiveRange] = useState('all');
+  const [activeYear, setActiveYear] = useState<string>(new Date().getFullYear().toString());
+  const [activeMonth, setActiveMonth] = useState<string>(new Date().getMonth().toString());
+  const [openDropdown, setOpenDropdown] = useState<'month' | 'year' | null>(null);
   const [sortBy, setSortBy] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
   
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    transactions.forEach(tx => years.add(new Date(tx.date).getFullYear().toString()));
+    years.add(new Date().getFullYear().toString());
+    return Array.from(years).sort((a, b) => Number(b) - Number(a));
+  }, [transactions]);
+
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    transactions.forEach(tx => {
+      const d = new Date(tx.date);
+      if (activeYear === 'all' || d.getFullYear().toString() === activeYear) {
+        months.add(d.getMonth().toString());
+      }
+    });
+    if (activeYear === 'all' || activeYear === new Date().getFullYear().toString()) {
+      months.add(new Date().getMonth().toString());
+    }
+    return Array.from(months).sort((a, b) => Number(b) - Number(a));
+  }, [transactions, activeYear]);
+
+  const getMonthName = useCallback((m: string) => {
+    if (m === 'all') return language === 'bn' ? 'সব মাস' : 'All Months';
+    const d = new Date(2000, Number(m), 1);
+    return d.toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { month: 'short' });
+  }, [language]);
+
   const filteredTransactions = useMemo(() => {
     let result = transactions.filter(tx => {
       // Type Filter
@@ -1937,22 +1947,10 @@ const TransactionsView = React.memo(({
       
       if (!typeMatch) return false;
 
-      // Date Range Filter
-      if (activeRange !== 'all') {
-        const txDate = new Date(tx.date);
-        const today = new Date();
-        if (activeRange === 'today') {
-          if (txDate.toDateString() !== today.toDateString()) return false;
-        } else if (activeRange === 'week') {
-          const weekAgo = new Date();
-          weekAgo.setDate(today.getDate() - 7);
-          if (txDate < weekAgo) return false;
-        } else if (activeRange === 'month') {
-          if (txDate.getMonth() !== today.getMonth() || txDate.getFullYear() !== today.getFullYear()) return false;
-        } else if (activeRange === 'year') {
-          if (txDate.getFullYear() !== today.getFullYear()) return false;
-        }
-      }
+      // Date Filter
+      const txDate = new Date(tx.date);
+      if (activeYear !== 'all' && txDate.getFullYear().toString() !== activeYear) return false;
+      if (activeMonth !== 'all' && txDate.getMonth().toString() !== activeMonth) return false;
 
       // Search Filter
       if (searchQuery) {
@@ -1978,7 +1976,7 @@ const TransactionsView = React.memo(({
     });
 
     return result;
-  }, [transactions, filterType, searchQuery, activeRange, sortBy]);
+  }, [transactions, filterType, searchQuery, activeYear, activeMonth, sortBy]);
 
   const stats = useMemo(() => {
     const inc = filteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -1986,24 +1984,98 @@ const TransactionsView = React.memo(({
     return { inc, exp, count: filteredTransactions.length };
   }, [filteredTransactions]);
 
-  const currentDate = new Date();
-  const currentMonthYear = currentDate.toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US', { month: 'long', year: 'numeric' });
-
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pb-32 bg-slate-50 min-h-screen">
       <div className="px-6 pt-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-slate-900 font-medium text-2xl">{t('history')}</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-slate-500">{currentMonthYear}</span>
+          
+          <div className="flex items-center bg-slate-200 border border-slate-200 rounded-lg p-[1px] gap-[1px]">
+            {/* Month Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setOpenDropdown(openDropdown === 'month' ? null : 'month')}
+                className="px-3.5 py-2 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 flex items-center gap-1.5 transition-colors rounded-l-[6px]"
+              >
+                {activeMonth === 'all' ? (language === 'bn' ? 'মাস' : 'Month') : getMonthName(activeMonth)}
+                <ChevronDown size={16} className={cn("transition-transform", openDropdown === 'month' && "rotate-180")} />
+              </button>
+
+              <AnimatePresence>
+                {openDropdown === 'month' && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute top-full right-0 mt-2 w-36 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 max-h-64 overflow-y-auto"
+                  >
+                    <button
+                      onClick={() => { setActiveMonth('all'); setOpenDropdown(null); }}
+                      className={cn("w-full text-left px-4 py-2.5 text-sm transition-colors", activeMonth === 'all' ? "bg-indigo-50 text-indigo-700 font-medium" : "text-slate-600 hover:bg-slate-50")}
+                    >
+                      {language === 'bn' ? 'সব মাস' : 'All Months'}
+                    </button>
+                    {availableMonths.map(m => (
+                      <button
+                        key={m}
+                        onClick={() => { setActiveMonth(m); setOpenDropdown(null); }}
+                        className={cn("w-full text-left px-4 py-2.5 text-sm transition-colors border-t border-slate-50", activeMonth === m ? "bg-indigo-50 text-indigo-700 font-medium" : "text-slate-600 hover:bg-slate-50")}
+                      >
+                        {getMonthName(m)}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Year Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setOpenDropdown(openDropdown === 'year' ? null : 'year')}
+                className="px-3.5 py-2 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 flex items-center gap-1.5 transition-colors"
+              >
+                {activeYear === 'all' ? (language === 'bn' ? 'বছর' : 'Year') : activeYear}
+                <ChevronDown size={16} className={cn("transition-transform", openDropdown === 'year' && "rotate-180")} />
+              </button>
+
+              <AnimatePresence>
+                {openDropdown === 'year' && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute top-full right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 max-h-64 overflow-y-auto"
+                  >
+                    <button
+                      onClick={() => { setActiveYear('all'); setOpenDropdown(null); }}
+                      className={cn("w-full text-left px-4 py-2.5 text-sm transition-colors", activeYear === 'all' ? "bg-indigo-50 text-indigo-700 font-medium" : "text-slate-600 hover:bg-slate-50")}
+                    >
+                      {language === 'bn' ? 'সব বছর' : 'All Years'}
+                    </button>
+                    {availableYears.map(y => (
+                      <button
+                        key={y}
+                        onClick={() => { setActiveYear(y); setOpenDropdown(null); }}
+                        className={cn("w-full text-left px-4 py-2.5 text-sm transition-colors border-t border-slate-50", activeYear === y ? "bg-indigo-50 text-indigo-700 font-medium" : "text-slate-600 hover:bg-slate-50")}
+                      >
+                        {y}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Filter Icon */}
             <button 
               onClick={() => setShowFilters(!showFilters)}
               className={cn(
-                "p-2 rounded-xl transition-all flex items-center justify-center",
-                showFilters ? "bg-indigo-600 text-white shadow-md" : "bg-white text-slate-600 border border-slate-200 shadow-sm hover:bg-slate-50"
+                "px-3.5 py-2 flex items-center justify-center transition-colors rounded-r-[6px]",
+                showFilters ? "bg-indigo-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
               )}
             >
-              <SlidersHorizontal size={18} />
+              <SlidersHorizontal size={16} />
             </button>
           </div>
         </div>
@@ -2017,25 +2089,6 @@ const TransactionsView = React.memo(({
               className="overflow-hidden mb-6"
             >
               <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm space-y-5">
-                {/* Date Range */}
-                <div>
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 block">Date Range</label>
-                  <div className="flex flex-wrap gap-2">
-                    {['all', 'today', 'week', 'month', 'year'].map(r => (
-                      <button 
-                        key={r}
-                        onClick={() => setActiveRange(r)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all",
-                          activeRange === r ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100"
-                        )}
-                      >
-                        {r === 'all' ? 'All Time' : t(r) || r}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Sort By */}
                 <div>
                   <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 block">Sort By</label>
@@ -2249,53 +2302,70 @@ const AnalysisViewContent = React.memo(({ searchQuery, setSearchQuery, onSearchF
     initial="hidden"
     animate="visible"
     exit="hidden"
-    className="pb-32 bg-slate-50 min-h-screen"
+    className="pb-32 bg-white min-h-screen"
   >
     <div className="px-6 pt-6">
-      <h2 className="text-slate-900 font-medium text-2xl mb-6">{t('analysis')}</h2>
+      <h2 className="text-xl font-medium text-slate-900 mb-4">{t('analysis')}</h2>
       
-      {/* App-consistent Summary Card with 3D feel */}
-      <motion.div 
-        variants={itemVariants}
-        className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-2xl text-white mb-6 overflow-hidden relative shadow-lg shadow-indigo-200 group"
-      >
-        <div className="relative z-10">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest">{t('averageDailySpend')}</p>
-              <h3 className="text-3xl font-bold mt-1 tracking-tighter">{formatAmount(averageDailySpend)}</h3>
+      {/* Compact Grid like Home Page */}
+      <div className="grid grid-cols-2 gap-px bg-slate-200 border border-slate-200 rounded-lg overflow-hidden mb-4">
+        <div className="bg-slate-100 p-3 relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full blur-xl bg-emerald-500/20"></div>
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-md flex items-center justify-center shrink-0 bg-emerald-500/10 backdrop-blur-xl border border-white text-emerald-500">
+              <Plus size={18} />
             </div>
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center shadow-lg">
-              <TrendingUp size={24} className="text-white" />
-            </div>
-          </div>
-          <div className="mt-6">
-            <div className="flex justify-between text-[10px] text-white/70 mb-1.5 uppercase font-bold tracking-wider">
-              <span>{t('savingsRate')}</span>
-              <span>{savingsRate.toFixed(1)}%</span>
-            </div>
-            <div className="h-2 bg-black/20 rounded-full overflow-hidden border border-white/10">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${savingsRate}%` }}
-                className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"
-              />
+            <div className="min-w-0 flex-1">
+              <p className="text-slate-500 text-xs font-medium leading-tight mb-1 text-clip-fix">{t('income') || 'আয়'}</p>
+              <p className="text-base font-medium leading-tight tracking-tighter text-slate-900 text-clip-fix">{formatAmount(totals.income)}</p>
             </div>
           </div>
         </div>
-        
-        {/* Decorative elements matching app style */}
-        <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-        <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl" />
-      </motion.div>
+        <div className="bg-slate-100 p-3 relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full blur-xl bg-rose-500/20"></div>
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-md flex items-center justify-center shrink-0 bg-rose-500/10 backdrop-blur-xl border border-white text-rose-500">
+              <Minus size={18} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-slate-500 text-xs font-medium leading-tight mb-1 text-clip-fix">{t('expense') || 'খরচ'}</p>
+              <p className="text-base font-medium leading-tight tracking-tighter text-slate-900 text-clip-fix">{formatAmount(totals.expense)}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-slate-100 p-3 relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full blur-xl bg-indigo-500/20"></div>
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-md flex items-center justify-center shrink-0 bg-indigo-500/10 backdrop-blur-xl border border-white text-indigo-500">
+              <TrendingUp size={18} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-slate-500 text-xs font-medium leading-tight mb-1 text-clip-fix">{t('averageDailySpend')}</p>
+              <p className="text-base font-medium leading-tight tracking-tighter text-slate-900 text-clip-fix">{formatAmount(averageDailySpend)}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-slate-100 p-3 relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full blur-xl bg-teal-500/20"></div>
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-md flex items-center justify-center shrink-0 bg-teal-500/10 backdrop-blur-xl border border-white text-teal-500">
+              <PiggyBank size={18} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-slate-500 text-xs font-medium leading-tight mb-1 text-clip-fix">{t('savingsRate')}</p>
+              <p className="text-base font-medium leading-tight tracking-tighter text-slate-900 text-clip-fix">{savingsRate.toFixed(1)}%</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Monthly Trend Chart */}
       <motion.div 
         variants={itemVariants}
-        className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm mb-6"
+        className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col mb-4"
       >
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-slate-900 text-sm font-bold tracking-tight">{t('monthlyTrend')}</h3>
+        <div className="flex items-center justify-between px-4 py-2 bg-slate-100">
+          <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('monthlyTrend')}</h4>
           <div className="flex gap-3">
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -2307,7 +2377,7 @@ const AnalysisViewContent = React.memo(({ searchQuery, setSearchQuery, onSearchF
             </div>
           </div>
         </div>
-        <div className="h-56">
+        <div className="h-56 p-4">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={monthlyTrendData}>
               <defs>
@@ -2339,14 +2409,17 @@ const AnalysisViewContent = React.memo(({ searchQuery, setSearchQuery, onSearchF
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {/* Expense Distribution */}
         <motion.div 
           variants={itemVariants}
-          className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm"
+          className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col"
         >
-          <h3 className="text-slate-900 text-sm font-bold tracking-tight mb-4">{t('expenseDistribution')}</h3>
-          <div className="h-56 relative">
+          <div className="flex items-center px-4 py-2 bg-slate-100">
+            <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('expenseDistribution')}</h4>
+          </div>
+          <div className="p-4">
+            <div className="h-56 relative">
             <ResponsiveContainer width="100%" height="100%">
               <RePieChart>
                 <Pie
@@ -2381,15 +2454,18 @@ const AnalysisViewContent = React.memo(({ searchQuery, setSearchQuery, onSearchF
               </div>
             ))}
           </div>
+          </div>
         </motion.div>
 
         {/* Top Categories */}
         <motion.div 
           variants={itemVariants}
-          className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm"
+          className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col"
         >
-          <h3 className="text-slate-900 text-sm font-bold tracking-tight mb-6">{t('topSpending')}</h3>
-          <div className="space-y-4">
+          <div className="flex items-center px-4 py-2 bg-slate-100">
+            <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('topSpending')}</h4>
+          </div>
+          <div className="p-4 space-y-4">
             {topCategories.map((cat, i) => (
               <div key={`${cat.name}-${i}`} className="space-y-1.5">
                 <div className="flex justify-between items-end">
@@ -2413,10 +2489,12 @@ const AnalysisViewContent = React.memo(({ searchQuery, setSearchQuery, onSearchF
       {/* Category Trends Bar Chart */}
       <motion.div 
         variants={itemVariants}
-        className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm"
+        className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col mb-4"
       >
-        <h3 className="text-slate-900 text-sm font-bold tracking-tight mb-6">{t('categoryTrends')}</h3>
-        <div className="h-52">
+        <div className="flex items-center px-4 py-2 bg-slate-100">
+          <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('categoryTrends')}</h4>
+        </div>
+        <div className="h-52 p-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={translatedPieData}>
               <XAxis 
@@ -4734,6 +4812,17 @@ const ProfileView = React.memo(({ transactions, managementData, onClose }: { tra
     const file = e.target.files?.[0];
     if (file) {
       try {
+        // Check if bucket exists, if not try to create it
+        try {
+          const { data: buckets } = await supabase.storage.listBuckets();
+          const hasAvatarsBucket = buckets?.some(b => b.name === 'avatars');
+          if (!hasAvatarsBucket) {
+            await supabase.storage.createBucket('avatars', { public: true });
+          }
+        } catch (bucketError) {
+          console.warn('Could not check/create bucket, proceeding with upload attempt:', bucketError);
+        }
+
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
         
@@ -4748,8 +4837,39 @@ const ProfileView = React.memo(({ transactions, managementData, onClose }: { tra
         const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
         setProfileImage(data.publicUrl);
       } catch (error) {
-        console.error('Error uploading image:', error);
-        alert('Error uploading image. Please try again.');
+        console.log('Using local storage for profile image.');
+        
+        // Fallback to base64 with resizing if Supabase upload fails
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 256;
+            const MAX_HEIGHT = 256;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            setProfileImage(canvas.toDataURL('image/jpeg', 0.8));
+          };
+          img.src = reader.result as string;
+        };
+        reader.readAsDataURL(file);
       }
     }
   };
@@ -5161,68 +5281,50 @@ const QuickActionsView: React.FC<{
       </div>
       
       <div className="p-6">
-        <div className="grid grid-cols-3 gap-4">
-          <button onClick={() => onQuickAction('expense')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-rose-50 hover:border-rose-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-rose-500/10 backdrop-blur-md border border-rose-500/20 flex items-center justify-center text-rose-500 group-hover:bg-rose-500/20 transition-all shadow-sm">
-              <Minus size={24} strokeWidth={2.5} />
-            </div>
-            <span className="text-xs font-medium text-slate-700 text-center">{t('expense') || 'খরচ'}</span>
+        <div className="grid grid-cols-3 bg-slate-200/80 backdrop-blur-2xl p-[1px] gap-[1px] rounded-2xl overflow-hidden">
+          <button onClick={() => onQuickAction('expense')} className="flex flex-col items-center justify-center gap-2 group aspect-square bg-rose-50 hover:bg-rose-100 transition-all">
+            <Minus size={32} strokeWidth={2.5} className="text-rose-600" />
+            <span className="text-xs font-medium text-rose-700 text-center">{t('expense') || 'খরচ'}</span>
           </button>
           
-          <button onClick={() => onQuickAction('income')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-emerald-50 hover:border-emerald-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500/20 transition-all shadow-sm">
-              <Plus size={24} strokeWidth={2.5} />
-            </div>
-            <span className="text-xs font-medium text-slate-700 text-center">{t('income') || 'আয়'}</span>
+          <button onClick={() => onQuickAction('income')} className="flex flex-col items-center justify-center gap-2 group aspect-square bg-emerald-50 hover:bg-emerald-100 transition-all">
+            <Plus size={32} strokeWidth={2.5} className="text-emerald-600" />
+            <span className="text-xs font-medium text-emerald-700 text-center">{t('income') || 'আয়'}</span>
           </button>
           
-          <button onClick={() => onQuickAction('tasks')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-blue-50 hover:border-blue-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-blue-500/10 backdrop-blur-md border border-blue-500/20 flex items-center justify-center text-blue-500 group-hover:bg-blue-500/20 transition-all shadow-sm">
-              <CheckCircle2 size={24} strokeWidth={2.5} />
-            </div>
-            <span className="text-xs font-medium text-slate-700 text-center">{t('tasks') || 'টাস্ক'}</span>
+          <button onClick={() => onQuickAction('tasks')} className="flex flex-col items-center justify-center gap-2 group aspect-square bg-blue-50 hover:bg-blue-100 transition-all">
+            <CheckCircle2 size={32} strokeWidth={2.5} className="text-blue-600" />
+            <span className="text-xs font-medium text-blue-700 text-center">{t('tasks') || 'টাস্ক'}</span>
           </button>
           
-          <button onClick={() => onQuickAction('debt')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-amber-50 hover:border-amber-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-amber-500/10 backdrop-blur-md border border-amber-500/20 flex items-center justify-center text-amber-500 group-hover:bg-amber-500/20 transition-all shadow-sm">
-              <Users size={24} strokeWidth={2.5} />
-            </div>
-            <span className="text-xs font-medium text-slate-700 text-center">{t('debt') || 'দেনা-পাওনা'}</span>
+          <button onClick={() => onQuickAction('debt')} className="flex flex-col items-center justify-center gap-2 group aspect-square bg-amber-50 hover:bg-amber-100 transition-all">
+            <Users size={32} strokeWidth={2.5} className="text-amber-600" />
+            <span className="text-xs font-medium text-amber-700 text-center">{t('debt') || 'দেনা-পাওনা'}</span>
           </button>
 
-          <button onClick={() => onQuickAction('reminder')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-purple-50 hover:border-purple-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-purple-500/10 backdrop-blur-md border border-purple-500/20 flex items-center justify-center text-purple-500 group-hover:bg-purple-500/20 transition-all shadow-sm">
-              <Bell size={24} strokeWidth={2.5} />
-            </div>
-            <span className="text-xs font-medium text-slate-700 text-center">{t('reminder') || 'রিমাইন্ডার'}</span>
+          <button onClick={() => onQuickAction('reminder')} className="flex flex-col items-center justify-center gap-2 group aspect-square bg-purple-50 hover:bg-purple-100 transition-all">
+            <Bell size={32} strokeWidth={2.5} className="text-purple-600" />
+            <span className="text-xs font-medium text-purple-700 text-center">{t('reminder') || 'রিমাইন্ডার'}</span>
           </button>
 
-          <button onClick={() => onQuickAction('note')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-indigo-50 hover:border-indigo-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-indigo-500/10 backdrop-blur-md border border-indigo-500/20 flex items-center justify-center text-indigo-500 group-hover:bg-indigo-500/20 transition-all shadow-sm">
-              <FileText size={24} strokeWidth={2.5} />
-            </div>
-            <span className="text-xs font-medium text-slate-700 text-center">{t('note') || 'নোট'}</span>
+          <button onClick={() => onQuickAction('note')} className="flex flex-col items-center justify-center gap-2 group aspect-square bg-indigo-50 hover:bg-indigo-100 transition-all">
+            <FileText size={32} strokeWidth={2.5} className="text-indigo-600" />
+            <span className="text-xs font-medium text-indigo-700 text-center">{t('note') || 'নোট'}</span>
           </button>
 
-          <button onClick={() => onQuickAction('recurring')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-cyan-50 hover:border-cyan-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-cyan-500/10 backdrop-blur-md border border-cyan-500/20 flex items-center justify-center text-cyan-500 group-hover:bg-cyan-500/20 transition-all shadow-sm">
-              <Repeat size={24} strokeWidth={2.5} />
-            </div>
-            <span className="text-xs font-medium text-slate-700 text-center">{t('recurring') || 'রিকোয়িং'}</span>
+          <button onClick={() => onQuickAction('recurring')} className="flex flex-col items-center justify-center gap-2 group aspect-square bg-cyan-50 hover:bg-cyan-100 transition-all">
+            <Repeat size={32} strokeWidth={2.5} className="text-cyan-600" />
+            <span className="text-xs font-medium text-cyan-700 text-center">{t('recurring') || 'রিকোয়িং'}</span>
           </button>
 
-          <button onClick={() => onQuickAction('subscription')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-pink-50 hover:border-pink-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-pink-500/10 backdrop-blur-md border border-pink-500/20 flex items-center justify-center text-pink-500 group-hover:bg-pink-500/20 transition-all shadow-sm">
-              <CreditCard size={24} strokeWidth={2.5} />
-            </div>
-            <span className="text-xs font-medium text-slate-700 text-center">{t('subscription') || 'সাবস্ক্রিপশন'}</span>
+          <button onClick={() => onQuickAction('subscription')} className="flex flex-col items-center justify-center gap-2 group aspect-square bg-pink-50 hover:bg-pink-100 transition-all">
+            <CreditCard size={32} strokeWidth={2.5} className="text-pink-600" />
+            <span className="text-xs font-medium text-pink-700 text-center">{t('subscription') || 'সাবস্ক্রিপশন'}</span>
           </button>
 
-          <button onClick={() => onQuickAction('add_shortcut')} className="flex flex-col items-center gap-3 group bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-all">
-            <div className="w-14 h-14 rounded-full bg-slate-500/5 backdrop-blur-md border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 group-hover:border-slate-400 group-hover:bg-slate-500/10 transition-all shadow-sm">
-              <Plus size={24} strokeWidth={2} />
-            </div>
-            <span className="text-xs font-medium text-slate-500 text-center">{t('add') || 'যোগ করুন'}</span>
+          <button onClick={() => onQuickAction('add_shortcut')} className="flex flex-col items-center justify-center gap-2 group aspect-square bg-slate-50 hover:bg-slate-100 transition-all">
+            <Plus size={32} strokeWidth={2.5} className="text-slate-600" />
+            <span className="text-xs font-medium text-slate-700 text-center">{t('add') || 'যোগ করুন'}</span>
           </button>
         </div>
       </div>
@@ -5427,6 +5529,7 @@ const SettingsView = React.memo(({
   onRestoreFromDrive,
   onDisconnectGoogle,
   googleTokens,
+  googleUser,
   autoBackup,
   setAutoBackup,
   backupNetwork,
@@ -5480,12 +5583,21 @@ const SettingsView = React.memo(({
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pb-32 bg-slate-50 min-h-screen">
       <div className="px-6 pt-6">
-        <h2 className="text-slate-900 font-medium text-2xl mb-6">{t('settings')}</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-slate-900 font-medium text-2xl">{t('settings')}</h2>
+          <button 
+            onClick={() => setDarkMode(!darkMode)}
+            className="p-2.5 bg-white rounded-full border border-slate-200 shadow-sm text-slate-600 hover:bg-slate-50 transition-all active:scale-95"
+            aria-label="Toggle Dark Mode"
+          >
+            {darkMode ? <Sun size={18} className="text-amber-500" /> : <Moon size={18} className="text-indigo-500" />}
+          </button>
+        </div>
       
       {/* Profile */}
       <button 
         onClick={onOpenProfile}
-        className="w-full bg-white rounded-lg p-4 mb-4 flex items-center justify-between border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors"
+        className="w-full bg-white rounded-lg p-4 mb-6 flex items-center justify-between border border-slate-200 hover:bg-slate-50 transition-colors"
       >
         <div className="flex items-center gap-4">
           {profileImage ? (
@@ -5504,9 +5616,11 @@ const SettingsView = React.memo(({
       </button>
 
       {/* Backup & Sync */}
-      <div className="mb-8">
-        <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('backupAndSync') || 'Backup & Sync'}</h3>
-        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+      <div className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col mb-6">
+        <div className="flex items-center px-4 py-2 bg-slate-100">
+          <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('backupAndSync') || 'Backup & Sync'}</h4>
+        </div>
+        <div className="flex flex-col">
           {!googleTokens ? (
             <button 
               onClick={onConnectGoogle}
@@ -5531,7 +5645,7 @@ const SettingsView = React.memo(({
                     <Check size={20} />
                   </div>
                   <div className="text-left">
-                    <h4 className="text-slate-900 font-medium text-sm">{t('googleDriveConnected') || 'Google Drive Connected'}</h4>
+                    <h4 className="text-slate-900 font-medium text-sm">{googleUser?.name || t('googleDriveConnected') || 'Google Drive Connected'}</h4>
                     <p className="text-emerald-600 text-xs">{googleUser?.email || t('readyToBackup') || 'Ready to backup/restore'}</p>
                   </div>
                 </div>
@@ -5634,25 +5748,34 @@ const SettingsView = React.memo(({
       </div>
 
       {/* Premium */}
-      <button className="w-full bg-white rounded-lg p-4 mb-4 flex items-center justify-between border border-emerald-500/20 shadow-sm hover:bg-slate-50 transition-colors">
-        <div className="flex items-center gap-3 text-emerald-600">
-          <Award size={20} />
-          <span className="font-medium text-sm">{t('upgradeToPremium')}</span>
+      <div className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col mb-6">
+        <div className="flex items-center px-4 py-2 bg-slate-100">
+          <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('premium') || 'Premium'}</h4>
         </div>
-        <ChevronRight size={20} className="text-emerald-500" />
-      </button>
-      <button className="w-full bg-white rounded-lg p-4 mb-8 flex items-center justify-between border border-amber-500/20 shadow-sm hover:bg-slate-50 transition-colors">
-        <div className="flex items-center gap-3 text-amber-600">
-          <Star size={20} />
-          <span className="font-medium text-sm">{t('claimAdFree')}</span>
+        <div className="flex flex-col">
+          <button className="w-full bg-white p-4 flex items-center justify-between border-b border-slate-100 hover:bg-slate-50 transition-colors">
+            <div className="flex items-center gap-3 text-emerald-600">
+              <Award size={20} />
+              <span className="font-medium text-sm">{t('upgradeToPremium')}</span>
+            </div>
+            <ChevronRight size={20} className="text-emerald-500" />
+          </button>
+          <button className="w-full bg-white p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+            <div className="flex items-center gap-3 text-amber-600">
+              <Star size={20} />
+              <span className="font-medium text-sm">{t('claimAdFree')}</span>
+            </div>
+            <span className="font-medium text-sm text-amber-600">0 pts</span>
+          </button>
         </div>
-        <span className="font-medium text-sm text-amber-600">0 pts</span>
-      </button>
+      </div>
 
       {/* Appearance */}
-      <div className="mb-8">
-        <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('appearance')}</h3>
-        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+      <div className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col mb-6">
+        <div className="flex items-center px-4 py-2 bg-slate-100">
+          <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('appearance')}</h4>
+        </div>
+        <div className="flex flex-col">
           <button 
             onClick={onOpenEditHome}
             className="w-full flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
@@ -5684,31 +5807,15 @@ const SettingsView = React.memo(({
             </div>
             <ChevronRight size={16} className="text-slate-400" />
           </button>
-
-          <div className="flex items-center justify-between p-4 hover:bg-slate-200 transition-colors">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-[0.85rem] bg-indigo-500/10 backdrop-blur-xl border border-white shadow-sm flex items-center justify-center text-indigo-500">
-                <Moon size={20} />
-              </div>
-              <div className="text-left">
-                <h4 className="text-slate-900 font-medium text-sm">{t('darkMode')}</h4>
-                <p className="text-slate-500 text-xs">{t('switchLightDarkMode')}</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => setDarkMode(!darkMode)}
-              className={cn("w-12 h-6 rounded-full transition-colors relative", darkMode ? "bg-indigo-500" : "bg-slate-300")}
-            >
-              <div className={cn("w-4 h-4 bg-white rounded-full absolute top-1 transition-transform", darkMode ? "translate-x-7" : "translate-x-1")} />
-            </button>
-          </div>
         </div>
       </div>
 
       {/* Preferences */}
-      <div className="mb-8">
-        <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('preferences')}</h3>
-        <div className="bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+      <div className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col mb-6">
+        <div className="flex items-center px-4 py-2 bg-slate-100">
+          <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('preferences')}</h4>
+        </div>
+        <div className="flex flex-col">
           <button 
             onClick={() => setShowCurrencyModal(true)}
             className="w-full flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
@@ -5801,9 +5908,11 @@ const SettingsView = React.memo(({
       </div>
 
       {/* Security */}
-      <div className="mb-8">
-        <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('security')}</h3>
-        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+      <div className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col mb-6">
+        <div className="flex items-center px-4 py-2 bg-slate-100">
+          <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('security')}</h4>
+        </div>
+        <div className="flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-[0.85rem] bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 shadow-sm flex items-center justify-center text-emerald-500">
@@ -5846,9 +5955,11 @@ const SettingsView = React.memo(({
       {/* Export PDF Removed */}
 
       {/* Data Backup */}
-      <div className="mb-8">
-        <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('dataBackup')}</h3>
-        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+      <div className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col mb-6">
+        <div className="flex items-center px-4 py-2 bg-slate-100">
+          <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('dataBackup')}</h4>
+        </div>
+        <div className="flex flex-col">
           <button 
             onClick={() => {}} // TODO: Implement export
             className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
@@ -5868,9 +5979,11 @@ const SettingsView = React.memo(({
       </div>
 
       {/* Notifications */}
-      <div className="mb-8">
-        <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('notifications')}</h3>
-        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+      <div className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col mb-6">
+        <div className="flex items-center px-4 py-2 bg-slate-100">
+          <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('notifications')}</h4>
+        </div>
+        <div className="flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-[0.85rem] bg-rose-500/10 backdrop-blur-md border border-rose-500/20 shadow-sm flex items-center justify-center text-rose-500">
@@ -5907,9 +6020,11 @@ const SettingsView = React.memo(({
       </div>
 
       {/* About */}
-      <div className="mb-8">
-        <h3 className="text-slate-400 text-xs font-medium uppercase mb-4 px-2">{t('about')}</h3>
-        <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+      <div className="bg-white rounded-lg overflow-hidden border border-slate-200 flex flex-col mb-6">
+        <div className="flex items-center px-4 py-2 bg-slate-100">
+          <h4 className="text-xs font-medium text-slate-500 uppercase whitespace-nowrap">{t('about')}</h4>
+        </div>
+        <div className="flex flex-col">
           {[
             { label: t('rateUs'), icon: Star, sub: t('leaveReview') },
             { label: t('inviteFriend'), icon: Users, sub: t('shareWithFriends') },
@@ -5936,7 +6051,7 @@ const SettingsView = React.memo(({
       <div className="mb-8">
         <button 
           onClick={onLogout}
-          className="w-full bg-white rounded-lg p-4 flex items-center justify-center gap-2 border border-rose-200 shadow-sm hover:bg-rose-50 transition-colors text-rose-600 font-medium"
+          className="w-full bg-white rounded-lg p-4 flex items-center justify-center gap-2 border border-rose-200 hover:bg-rose-50 transition-colors text-rose-600 font-medium"
         >
           <LogOut size={20} />
           <span>{t('logout') || 'Logout'}</span>
@@ -8364,6 +8479,13 @@ export default function App() {
       clearTimeout(authTimeout);
       if (error) {
         console.error('Auth session error:', error);
+        // Force clear local storage to recover from invalid refresh token
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key);
+          }
+        }
         supabase.auth.signOut().catch(console.error);
         setSession(null);
         setIsAuthChecking(false);
@@ -8427,6 +8549,12 @@ export default function App() {
       }
       if ((event as any) === 'TOKEN_REFRESH_FAILED') {
         console.error('Token refresh failed, signing out...');
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key);
+          }
+        }
         supabase.auth.signOut().catch(console.error);
         setSession(null);
         return;
@@ -8443,16 +8571,26 @@ export default function App() {
                 return merged;
               });
             }
-            if (data.name && (!profileName || profileName.trim() === '')) {
-              setProfileName(data.name);
-              localStorage.setItem('profileName', data.name);
+            if (data.name) {
+              setProfileName(prev => {
+                if (!prev || prev.trim() === '') {
+                  localStorage.setItem('profileName', data.name);
+                  return data.name;
+                }
+                return prev;
+              });
             }
             
             // Try to get avatar from Google metadata if local image is empty
             const avatarUrl = session.user?.user_metadata?.avatar_url || session.user?.user_metadata?.picture;
-            if (avatarUrl && (!profileImage || profileImage.trim() === '')) {
-              setProfileImage(avatarUrl);
-              localStorage.setItem('profileImage', avatarUrl);
+            if (avatarUrl) {
+              setProfileImage(prev => {
+                if (!prev || prev.trim() === '') {
+                  localStorage.setItem('profileImage', avatarUrl);
+                  return avatarUrl;
+                }
+                return prev;
+              });
             }
             
             setOnboardingComplete(true);
@@ -8460,9 +8598,14 @@ export default function App() {
           } else if (error) {
             // Even if no profile in DB, try to get avatar from Google metadata
             const avatarUrl = session.user?.user_metadata?.avatar_url || session.user?.user_metadata?.picture;
-            if (avatarUrl && (!profileImage || profileImage.trim() === '')) {
-              setProfileImage(avatarUrl);
-              localStorage.setItem('profileImage', avatarUrl);
+            if (avatarUrl) {
+              setProfileImage(prev => {
+                if (!prev || prev.trim() === '') {
+                  localStorage.setItem('profileImage', avatarUrl);
+                  return avatarUrl;
+                }
+                return prev;
+              });
             }
           }
           setIsProfileLoaded(true);
@@ -8819,43 +8962,54 @@ export default function App() {
       }, 500);
     }
     
-    const backupData = {
-      transactions,
-      managementData,
-      profile: {
-        name: profileName,
-        image: profileImage,
-        email: profileEmail,
-        language,
-        currency
-      },
-      settings: {
-        darkMode,
-        widgetEnabled,
-        floatingBubbleEnabled,
-        homeSections,
-        autoBackup,
-        backupNetwork
-      },
-      onboarding: JSON.parse(localStorage.getItem('onboarding_data') || '{}'),
-      version: '2.0',
-      timestamp: new Date().toISOString()
-    };
-
-    const dataSize = new Blob([JSON.stringify(backupData)]).size;
-    console.log(`Backup data prepared. Size: ${(dataSize / 1024).toFixed(2)} KB`);
-    
-    if (dataSize > 4 * 1024 * 1024) {
-      console.warn('Backup data is very large. This might fail on some hosting providers.');
-      if (!silent && !confirm('Your backup data is quite large (over 4MB). This might fail depending on your connection or hosting limits. Do you want to continue?')) {
-        setIsBackingUp(false);
-        return;
-      }
-    }
-
-    console.log('Sending backup to server...');
-
     try {
+      let onboardingData = {};
+      try {
+        const storedOnboarding = localStorage.getItem('onboarding_data');
+        if (storedOnboarding && storedOnboarding !== 'undefined') {
+          onboardingData = JSON.parse(storedOnboarding);
+        }
+      } catch (e) {
+        console.warn('Failed to parse onboarding data for backup:', e);
+      }
+
+      const backupData = {
+        transactions,
+        managementData,
+        profile: {
+          name: profileName,
+          image: profileImage,
+          email: profileEmail,
+          language,
+          currency
+        },
+        settings: {
+          darkMode,
+          widgetEnabled,
+          floatingBubbleEnabled,
+          homeSections,
+          autoBackup,
+          backupNetwork
+        },
+        onboarding: onboardingData,
+        version: '2.0',
+        timestamp: new Date().toISOString()
+      };
+
+      const dataSize = new Blob([JSON.stringify(backupData)]).size;
+      console.log(`Backup data prepared. Size: ${(dataSize / 1024).toFixed(2)} KB`);
+      
+      if (dataSize > 4 * 1024 * 1024) {
+        console.warn('Backup data is very large. This might fail on some hosting providers.');
+        if (!silent && !confirm('Your backup data is quite large (over 4MB). This might fail depending on your connection or hosting limits. Do you want to continue?')) {
+          setIsBackingUp(false);
+          if (progressInterval) clearInterval(progressInterval);
+          return;
+        }
+      }
+
+      console.log('Sending backup to server...');
+
       const response = await fetch('/api/drive/backup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -9094,6 +9248,31 @@ export default function App() {
         if (event.data.user) {
           setGoogleUser(event.data.user);
           localStorage.setItem('google_user', JSON.stringify(event.data.user));
+          
+          // Update profile info if empty
+          setProfileName(prev => {
+            if ((!prev || prev.trim() === '') && event.data.user.name) {
+              localStorage.setItem('profileName', event.data.user.name);
+              return event.data.user.name;
+            }
+            return prev;
+          });
+          
+          setProfileImage(prev => {
+            if ((!prev || prev.trim() === '') && event.data.user.picture) {
+              localStorage.setItem('profileImage', event.data.user.picture);
+              return event.data.user.picture;
+            }
+            return prev;
+          });
+          
+          setProfileEmail(prev => {
+            if ((!prev || prev.trim() === '') && event.data.user.email) {
+              localStorage.setItem('profileEmail', event.data.user.email);
+              return event.data.user.email;
+            }
+            return prev;
+          });
         }
 
         setGoogleTokens((prev: any) => {
@@ -9425,6 +9604,14 @@ export default function App() {
       await supabase.auth.signOut();
     } catch (err) {
       console.error('Logout error:', err);
+    }
+
+    // Force clear local storage for supabase
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        localStorage.removeItem(key);
+      }
     }
 
     // Clear all relevant localStorage items

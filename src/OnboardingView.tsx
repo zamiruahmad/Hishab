@@ -52,6 +52,17 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
     const file = e.target.files?.[0];
     if (file) {
       try {
+        // Check if bucket exists, if not try to create it
+        try {
+          const { data: buckets } = await supabase.storage.listBuckets();
+          const hasAvatarsBucket = buckets?.some(b => b.name === 'avatars');
+          if (!hasAvatarsBucket) {
+            await supabase.storage.createBucket('avatars', { public: true });
+          }
+        } catch (bucketError) {
+          console.warn('Could not check/create bucket, proceeding with upload attempt:', bucketError);
+        }
+
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
         
@@ -66,8 +77,39 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
         const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
         setProfileImage(data.publicUrl);
       } catch (error) {
-        console.error('Error uploading image:', error);
-        alert('Error uploading image. Please try again.');
+        console.log('Using local storage for profile image.');
+        
+        // Fallback to base64 with resizing if Supabase upload fails
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 256;
+            const MAX_HEIGHT = 256;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            setProfileImage(canvas.toDataURL('image/jpeg', 0.8));
+          };
+          img.src = reader.result as string;
+        };
+        reader.readAsDataURL(file);
       }
     }
   };

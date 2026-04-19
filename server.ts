@@ -19,6 +19,14 @@ async function startServer() {
 
   // --- API Routes ---
 
+  app.get('/api/test-env', (req, res) => {
+    res.json({
+      hasClientId: !!process.env.VITE_GOOGLE_CLIENT_ID,
+      hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+      hasRedirectUri: !!process.env.GOOGLE_REDIRECT_URI
+    });
+  });
+
   // 1. Get Google Auth URL
   app.get('/api/auth/google/url', (req, res) => {
     const origin = req.headers.referer || req.headers.origin;
@@ -205,7 +213,8 @@ async function startServer() {
       if (errorMessage.toLowerCase().includes('refresh token') || 
           errorMessage.includes('invalid_grant') || 
           errorMessage.includes('No refresh token is set') ||
-          errorMessage.includes('invalid_token')) {
+          errorMessage.includes('invalid_token') ||
+          errorMessage.toLowerCase().includes('invalid authentication credentials')) {
         return res.status(401).json({ 
           error: 'Google Drive connection expired or invalid. Please disconnect and reconnect Google Drive in Settings.',
           code: 'AUTH_EXPIRED'
@@ -263,7 +272,8 @@ async function startServer() {
       if (errorMessage.toLowerCase().includes('refresh token') || 
           errorMessage.includes('invalid_grant') || 
           errorMessage.includes('No refresh token is set') ||
-          errorMessage.includes('invalid_token')) {
+          errorMessage.includes('invalid_token') ||
+          errorMessage.toLowerCase().includes('invalid authentication credentials')) {
         return res.status(401).json({ 
           error: 'Google Drive connection expired or invalid. Please disconnect and reconnect Google Drive in Settings.',
           code: 'AUTH_EXPIRED'
