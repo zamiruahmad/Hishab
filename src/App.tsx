@@ -5537,7 +5537,9 @@ const SettingsView = React.memo(({
   isBackingUp,
   isRestoring,
   backupProgress,
-  restoreProgress
+  restoreProgress,
+  onExportLocal,
+  onImportLocal
 }: { 
   onOpenWorkspace: (id: string) => void, 
   onOpenDetail: (label: string) => void,
@@ -5571,7 +5573,9 @@ const SettingsView = React.memo(({
   isBackingUp: boolean,
   isRestoring: boolean,
   backupProgress: number,
-  restoreProgress: number
+  restoreProgress: number,
+  onExportLocal: () => void,
+  onImportLocal: (e: React.ChangeEvent<HTMLInputElement>) => void
 }) => {
   const [privacyMode, setPrivacyMode] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
@@ -5961,20 +5965,39 @@ const SettingsView = React.memo(({
         </div>
         <div className="flex flex-col">
           <button 
-            onClick={() => {}} // TODO: Implement export
-            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+            onClick={onExportLocal}
+            className="w-full flex items-center justify-between p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-[0.85rem] bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 shadow-sm flex items-center justify-center text-emerald-500">
                 <Cloud size={20} />
               </div>
               <div className="text-left">
-                <h4 className="text-slate-900 font-medium text-sm">{t('exportData')}</h4>
-                <p className="text-slate-500 text-xs">{t('downloadData')}</p>
+                <h4 className="text-slate-900 font-medium text-sm">{t('exportData')} (Local Backup)</h4>
+                <p className="text-slate-500 text-xs">Save your data to a locally stored file</p>
               </div>
             </div>
             <ChevronRight size={16} className="text-slate-400" />
           </button>
+          
+          <label className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-[0.85rem] bg-indigo-500/10 backdrop-blur-md border border-indigo-500/20 shadow-sm flex items-center justify-center text-indigo-500">
+                <CloudUpload size={20} />
+              </div>
+              <div className="text-left">
+                <h4 className="text-slate-900 font-medium text-sm">Import Data (Local Restore)</h4>
+                <p className="text-slate-500 text-xs">Restore your data from a backup file</p>
+              </div>
+            </div>
+            <input 
+              type="file" 
+              accept=".json" 
+              className="hidden" 
+              onChange={onImportLocal}
+            />
+            <ChevronRight size={16} className="text-slate-400" />
+          </label>
         </div>
       </div>
 
@@ -8922,14 +8945,88 @@ export default function App() {
     localStorage.setItem('management_data', JSON.stringify(managementData));
   }, [managementData]);
 
+  const handleExportLocal = useCallback(() => {
+    try {
+      const data = {
+        transactions,
+        managementData,
+        settings: {
+          darkMode,
+          widgetEnabled,
+          floatingBubbleEnabled,
+          homeSections,
+          autoBackup,
+          backupNetwork,
+          language,
+          currency,
+          profileName,
+          profileEmail,
+          profileImage
+        },
+        version: '2.0',
+        timestamp: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `finance_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      alert('Data exported successfully!');
+    } catch (e) {
+      console.error('Export failed:', e);
+      alert('Failed to export data.');
+    }
+  }, [transactions, managementData, darkMode, widgetEnabled, floatingBubbleEnabled, homeSections, autoBackup, backupNetwork, language, currency, profileName, profileEmail, profileImage]);
+
+  const handleImportLocal = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!confirm('This will override your current data with the backup file. Are you sure?')) {
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const result = e.target?.result as string;
+        const backupData = JSON.parse(result);
+        if (backupData.transactions) setTransactions(backupData.transactions);
+        if (backupData.managementData) setManagementData(backupData.managementData);
+        if (backupData.settings) {
+          if (backupData.settings.darkMode !== undefined) setDarkMode(backupData.settings.darkMode);
+          if (backupData.settings.widgetEnabled !== undefined) setWidgetEnabled(backupData.settings.widgetEnabled);
+          if (backupData.settings.floatingBubbleEnabled !== undefined) setFloatingBubbleEnabled(backupData.settings.floatingBubbleEnabled);
+          if (backupData.settings.homeSections) setHomeSections(backupData.settings.homeSections);
+        }
+        alert('Data imported and restored successfully!');
+      } catch (err) {
+        console.error('Import failed:', err);
+        alert('Invalid backup file or format.');
+      }
+      event.target.value = '';
+    };
+    reader.readAsText(file);
+  }, [setTransactions, setManagementData, setDarkMode, setWidgetEnabled, setFloatingBubbleEnabled, setHomeSections]);
+
   const handleConnectGoogle = useCallback(async () => {
     try {
       setPendingRestoreAfterAuth(true);
       const response = await fetch('/api/auth/google/url');
-      const { url } = await response.json();
-      window.open(url, 'google_auth', 'width=600,height=700');
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.error || 'Failed to connect to Google Drive.');
+        return;
+      }
+      window.open(data.url, 'google_auth', 'width=600,height=700');
     } catch (error) {
       console.error('Error getting Google auth URL:', error);
+      alert('Network or server error while connecting to Google Drive.');
     }
   }, []);
 
@@ -9936,6 +10033,8 @@ export default function App() {
                     isRestoring={isRestoring}
                     backupProgress={backupProgress}
                     restoreProgress={restoreProgress}
+                    onExportLocal={handleExportLocal}
+                    onImportLocal={handleImportLocal}
                   />
                 ) : activeTab === 'editHome' ? (
                   <EditHomePageView 

@@ -29,6 +29,10 @@ async function startServer() {
 
   // 1. Get Google Auth URL
   app.get('/api/auth/google/url', (req, res) => {
+    if (!process.env.VITE_GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      return res.status(500).json({ error: 'OAuth credentials are not configured in Settings > Secrets. Please add VITE_GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.' });
+    }
+
     const origin = req.headers.referer || req.headers.origin;
     const host = req.headers.host;
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
